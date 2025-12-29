@@ -141,5 +141,5 @@ Este script clasifica los tweets según la "modularity class" calculada con Geph
 **Resultados**
 
 -   Un fichero con los tweets clasificados con su modularidad (prefijo_classified.csv) y otro con los no clasificados (prefijo_not_classified.csv)
--   Un fichero por comunidad con los textos de los tweets (prefijo\_\_community_n.csv) para NotebooLM
--   Si el parámetro block está a true, un fichero por bloque con los textos de los tweets (prefijo_blocks_xxxxxx.csv) para NotebooLM
+-   Un fichero por comunidad con los textos de los tweets (prefijo\_\_community_n.csv) para NotebookLM
+-   Si el parámetro block está a true, un fichero por bloque con los textos de los tweets (prefijo_blocks_xxxxxx.csv) para NotebookLM
