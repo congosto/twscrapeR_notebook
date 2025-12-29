@@ -1,22 +1,22 @@
-# twscrapeR_notebook
+---
+title: "scraper basado en twscrapeR"
+output:
+  html_document:
+    df_print: paged
+---
 
-Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
+## twscrapeR.Rmd
 
-## Instalación
+En este cuaderno se han adaptado las [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) a la forma de trabajar con t_hoarder_R.
 
-1.  Visitar el repositorio de [**twscraperR**](https://github.com/agusnieto77/twscrapeR) para instalar la librería
-2.  Descargar los cuadernos de twscrapeR_notebook
-3.  Crear un proyecto en Rstudio
+Esta librerías se basan en otras en Python por lo que preciso instalar previamente. 
 
-## Visión general
+Para instalar la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) seguir las instrucciones de su repositorio en github.
 
-Estos cuadernos utilizan la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) que es una alternativa para la descarga de datos de Twitter tras el cierra de las APIs con acceso gratuito. La librería utiliza Twitter GraphQL API lo que implica:
+Hay que disponer de al menos un usuario con sus credenciales (se explica en la documentación de la librería)
 
--   Cuando se realiza una búsqueda solo se obtienen los tweets originales
--   La descarga tiene Un ratelimit de 900 solicitudes por ventana de 15 minutos. A pesar de esta limitación, es posible descargar en un tiempo razonable los tweets originales ya que la mayoría son retweets
--   En la descarga de los retweets solo baja los usuarios que han retuiteado un tuit dado. Es bastante más rápida y más ligera de datos que la de los tweets originales.
 
-## Estructura de los datos
+### Estructura de los datos
 
 ```         
 root ----+----data-+---- dataset_1
@@ -31,34 +31,16 @@ root ----+----data-+---- dataset_1
                        |
                        +---- twscrapeR_charts.Rmd
                        |
-                       +---- twscrapeR_charts_profile.Rmd
-                       |
                        +---- twscrapeR_graph.Rmd
                        |
                        +---- twscrapeR_classifly_tweets.Rmd
+                       
+                       
 ```
 
-El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo.
+El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo. 
 
-## Notebooks
-
-### twscrapeR_cfg.Rmd
-
-Configura los usuarios para la descarga. Solo hay que ejecutarlo una vez o cuando se añade un perfil
-
-Es necesario incluir el token y el cto de un usuario. Para extraer el auth_token y el cto
-
--   Abre <https://x.com> en tu navegador (con sesión iniciada)
--   Presiona F12 → "Application" → "Cookies" → "<https://x.com>"
--   Copia los valores de auth_token y ct0
-
-Formato: "auth_token=valor1; ct0=valor2"
-
-### twscrapeR.Rmd
-
-Permite descargar tweets de una consulta, de un usuario o los retweets
-
-**Funcionalidades**:
+### Funcionalidades
 
 1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
 2.  **Get Tweets Historical Timeline**: descarga el timeline de una lista de usuarios en un periodo definido con una frecuencia establecida. No se obtienen los RTs porque equivale a una consulta del tipo from:usuario
@@ -70,76 +52,310 @@ Permite descargar tweets de una consulta, de un usuario o los retweets
 2.  Los datos se almacenan en formato csv
 3.  Guarda contexto de la descarga. Si se interrumpe, se reanudará en el punto que lo dejó
 
-### twscraperR_charts.Rmd
+**Limitaciones**
 
-Genera un conjunto de gráficas parametrizables con los datos descargados con el cuaderno **twscapeR.Rmd**
+La librería original en Python [twscrape](https://github.com/vladkens/twscrape) utiliza Twitter GraphQL API que tiene un ratelimit de 900 solicitudes por ventana de 15 minutos.
 
--   Impacto
-    -   Tweets vs. alcance con influencers (con o sin zoom)
-    -   Tweets vs. alcance
-    -   Tweets vs. RTs con influencers (con o sin zoom)
-    -   Tweets vs. RTs
-    -   comments vs. RTs
--   Palabras más frecuentes (sin amplificación o con ella)
--   Menciones a Medios
--   Topics
-    -   Evolución acumulada (con o sin zoom)
-    -   Evolución acumulada con amplificación (con o sin zoom)
--   Comunidades
-    -   Palabras más frecuentes por comunidad
-    -   Tweets por comunidad
+Si se quiere más velocidad, habría que construir un pool de usuarios para que cuando venza una limitación, se continúe con otro usuario. En este cuaderno no está implementado el uso del pool de usuarios pero se indica como hacerlo en el repositorio del la librería [twscrape](https://github.com/vladkens/twscrape)
 
-### twscrapeR_charts_profile.Rmd
 
-Genera un conjunto de gráficas parametrizables para un perfil, con los datos descargados con el cuaderno **twscrapeR.Rmd** opción Get Tweets Historical Timeline
 
--   Ritmo de publicación
-    -   Rutina diaria
-    -   Ritmo semanal
-    -   Ritmo anual
--   Impacto
-    -   Tweets vs. favoritos
-    -   Tweets vs. Rts
-    -   Tweets vs. Citas
-    -   Tweets vs. comentarios
-    -   Tweets vs. Impresiones
-    -   Engagement
-    -   Comentarios vs. RTs
--   Palabras más frecuentes
--   Topics
-    -   Evolución acumulada
+### Cómo usar el cuaderno
 
-### twscrapeR_graph.Rmd
+Se aconseja usarlo en **modo visual** para poder acceder a los chunks por índice.
 
-Genera un fichero gdf para que sirva de entrada a Gephi de un dataset descargado con **twscrapeR.Rmd**.
+1.  Previamente los perfiles deben estar configurados (usar el cuaderno twscrapeR_cfg.Rmd)
+2.  Ejecutar los cuatro primeros chunk: init Notebook, Parche twscrape, impor , Import Fuctions
+3.  Elegir el tipo de descarga, rellenar los parámetros que se encuentran en el principio del chunk y ejecutarlo.
+4.  Si ocurre un error durante la descarga, se recomienda hacer un reset a R y empezar en el punto 5.  La descarga se reanudará en el punto que se dejó.
 
-Por el momento solo se ha implementado la relación RT. Posiblemente en un futuro se incorporen la relación de comentarios y citas .
+### Código inicial
 
-El formato gdf es texto plano, compuesto de dos zonas:
+Hay que ejecutarlo antes de una descarga
 
--   Descripción de los nodos: en este caso serán los autores de los tweets con los siguientes atributos lang, Relaciones entrantes, relaciones salientes, total de relaciones
--   Descripción de las relaciones: para cada relación, un par formado por el que interactúa y el interactuado
+#### Init notebook
 
-También permite acotarlo en un rango temporal.
+```{r setup, 	echo = FALSE,message = FALSE,	warning = FALSE,include=FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+require("knitr")
+## setting working directory
+opts_knit$set(root.dir = "./")
+```
 
-### twscrapeR_classify_tweets.Rmd
+#### Parche twscrape
 
-Este script clasifica los tweets según la "modularity class" calculada con Gephi. Para hacer la clasificación se necesitan:
+¡¡¡Atención!!! 
 
-**Datos de entrada**
+La actual librería python twscrape en que se basa la librería R twescrapeR no está actualizada en los últimos meses. Debido a un cambio de formato en el JSON, es necesario ejecutar este parche antes de importar la librería twscrapeR
 
--   El dataset con los tweets
--   Un fichero exportado de Gephi con los datos de red de los perfiles
+```{r parche twscrape}
+if(!"reticulate" %in% installed.packages()) {install.packages("reticulate")}
+library(reticulate)
+use_python("C:/Users/User/anaconda3/python.exe", required = TRUE)  # Ajusta la ruta según tu sistema
+# Importar y ejecutar el parche
+source_python("../scripts/parche_twscrape.py")
 
-**Clasificación**
 
--   Se añade la columna "community" al dataset con los tweets en la que se aplicará:
+```
 
-    -   La "modularity class" del autor del tweet si es un mensaje original, una cita o un comentario
-    -   En el caso de ser un retweet, se le asignará la "modularity class" del retuiteado.
+#### Import libraries
 
-**Resultados**
+```{r library}
+if(!"tidyverse" %in% installed.packages()) {install.packages("tidyverse")}
+if(!"chromote" %in% installed.packages()) {install.packages("chromote")}
+if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
+if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
+if(!"glue" %in% installed.packages()) {install.packages("glue")}
+library("dplyr")
+library("stringr")
+library("readr")
+library("twscrapeR")
+library("glue")
 
--   Un fichero con los tweets clasificados con su modularidad (prefijo_classified.csv) y otro con los no clasificados (prefijo_not_classified.csv)
--   Un fichero por comunidad con los textos de los tweets (prefijo\_\_community_n.csv) para NotebooLM
--   Si el parámetro block está a true, un fichero por bloque con los textos de los tweets (prefijo_blocks_xxxxxx.csv) para NotebooLM
+```
+
+#### Import functions
+
+```{r funtions, include=FALSE}
+source("utils/context.R")   # Funciones contexto de la descarga
+
+```
+
+### Código de descargas
+
+Elegir la descarga deseada. Previamente se rellenarán los parámetros
+
+#### Get Tweets Historical Search
+
+```{r Get-Tweets-Historical-Search, message=TRUE, warning=TRUE}
+# Parámetros
+data_path = "../data"
+dataset <- "xxxxxxxx"
+prefix <- "xxxxxxxx"
+query <- "xxxxxxxx"
+since <- "yyyy-mm-dd HH:MM:SS"
+until <- "yyyy-mm-dd HH:MM:SS"
+frecuency <- "6 hour"
+sleep_time <- 5
+  
+# Control de duración
+start_time <- Sys.time()
+print(glue("Start at {start_time}"))
+# Entorno ficheros
+output <- file.path(data_path,dataset)
+output_file <- file.path(output,glue("{prefix}.csv"))
+
+# Contexto
+flag_append <- FALSE
+flag_head <- TRUE
+last_date <- get_context_search(output,prefix)
+if (!is.null (last_date)){
+  flag_append <- TRUE
+  flag_head <- FALSE
+  since <- last_date
+}
+
+# Descarga
+date_sequence <- seq(as.POSIXct(since), as.POSIXct(until), by=frecuency)
+if (length(date_sequence) > 1){
+  for (i in 1:(length(date_sequence) - 1))  {
+    ini_date = paste0(gsub(" ", "_", date_sequence[[i]]),"_UTC")
+    end_date = paste0(gsub(" ", "_", date_sequence[[i+1]]),"_UTC")
+    print(glue("Desde {ini_date} hasta {end_date}"))
+    query_date <- glue("{query} since:{ini_date} until:{end_date}")
+    print(glue("--> Descargando {query_date} ......"))
+    tweets <- search_tweets(query_date, n = 900)
+    if (length(tweets) >= 1){
+      df_tweets <- to_dataframe(tweets) %>%
+        mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>%
+        mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' '))
+      write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
+      put_context_search(output, prefix, date_sequence[[i+1]])
+      flag_append <- TRUE
+      flag_head <- FALSE
+    }
+    if (i < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
+      Sys.sleep(3)
+      print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
+      Sys.sleep(sleep_time-3)
+    }
+  }
+}
+
+# Ordenar y quitar repetidos
+print ("Removing duplicates and sorting by user/date")
+output_order_file <- file.path(output,glue("{prefix}.csv"))
+
+tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
+  group_by(id)  %>%
+  slice(1) %>%
+  arrange(date)
+write_csv(tweets_meta, output_order_file)
+
+# Control de duración
+end_time <- Sys.time()
+last_time <- Sys.time() - start_time
+print(glue("Last {last_time}"))
+```
+
+#### Get Tweets Historical Timeline
+
+Descarga los tuits de una lista de usuarios 
+
+La query que realiza es from:user since:xxx-xx-xx until:xxxx-xx-xx
+
+OJO!!! no descarga RTs realizados por el usuario, solo tweets propios
+
+```{r Get-Tweets-Historical-Timeline, message=TRUE, warning=TRUE}
+# Parámetros
+data_path = "../data"
+dataset <- "xxxxxxxx"
+prefix <- "xxxxxxxx"
+since <- "yyyy-mm-dd HH:MM:SS"
+until <- "yyyy-mm-dd HH:MM:SS"
+frecuency <- "1 month"
+sleep_time <- 5
+
+# Lista de usuarios para descargar
+list_users = c(
+"xxxxxxxx"
+)
+# Control de duración
+start_time <- Sys.time()
+print(glue("Start at {start_time}"))
+
+# Entorno ficheros
+output <- file.path(data_path,dataset)
+output_file <- file.path(output,paste0(prefix,".csv"))
+output_meta_file <- file.path(output,paste0(prefix,".csv"))
+
+#contexto
+flag_append <- FALSE
+flag_head <- TRUE
+context <- get_context_user(output, prefix)
+if (!is.null (context)){
+  flag_append <- TRUE
+  flag_head <- FALSE
+  users_downloaded <- context$username
+  dates_downloaded <- context$last_date
+}
+
+# Descarga
+for (i_user in 1:(length(list_users))){
+  since_partial <- since
+  if (!is.null (context)){
+    if (i_user <= length(users_downloaded)){
+      if (list_users[[i_user]] == users_downloaded[[i_user]]){
+        since_partial <- gsub("_UTC","",dates_downloaded[[i_user]])
+        since_partial <- gsub("_"," ", since_partial)
+      }
+    }
+  }
+  user <- list_users[[i_user]]
+  print(glue("--> download user {user}"))
+  date_sequence <- seq(as.POSIXct(since_partial), as.POSIXct(until), by=frecuency)
+  if (length(date_sequence) > 1){
+    for (i_date in 1:(length(date_sequence) - 1))  {
+      ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
+      end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]),"_UTC")
+      print(glue("Desde {ini_date} hasta {end_date}"))
+      query_date <- glue("from:{user} since:{ini_date} until:{end_date}")
+      tweets <- search_tweets(query_date, n = 900)
+      if (length(tweets) >= 1){
+        df_tweets <- to_dataframe(tweets) %>% 
+          filter (tolower(username) == tolower(user)) %>%  # quitamos falsos positivos
+          mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>% #quitamos saltos de línea
+          mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' '))
+        write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
+        flag_append <- TRUE
+        flag_head <- FALSE
+      }
+      print(glue("último {end_date}"))
+      put_context_user(output, end_date,i_user, user)
+      if (i_date < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
+        Sys.sleep(3)
+        print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
+        Sys.sleep(sleep_time-3)
+      }
+    }
+  }
+}
+# Ordenar y quitar repetidos
+print ("Removing duplicates and sorting by user/date")
+output_order_file <- file.path(output,glue("{prefix}.csv"))
+
+tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
+  group_by(id)  %>%
+  slice(1) %>%
+  arrange(date)
+write_csv(tweets_meta, output_order_file)
+
+# Control de duración
+end_time <- Sys.time()
+last_time <- Sys.time() - start_time
+print(glue("Last {last_time}"))
+
+```
+
+#### Get Retweets
+
+```{r Get-Tweets-Cites, message=TRUE, warning=TRUE}
+# Parámetros
+data_path = "../data"
+dataset <- "xxxxxxxx"
+prefix <- "xxxxxxxx"
+min_RTs <- 3  # Mínimo número de RTs para descargar RTs
+sleep_time <- 5
+
+# Entorno ficheros
+file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
+output <- file.path(data_path,dataset)
+output_file <- file.path(output,paste0(prefix,"_RTs.csv"))
+
+# Seleccionar tweets para descargar sus comentarios
+tweets <- read_csv(file_in, show_col_types = FALSE) %>%
+  filter (retweet_count >= min_RTs) %>%
+  mutate(tweet_id = str_extract(url, "\\d+$")) %>%
+  arrange(tweet_id)
+list_tweets_id <- tweets$tweet_id
+list_tweets_url <- tweets$url
+
+# Contexto
+flag_append <- FALSE
+flag_head <- TRUE
+last_tweet_id <- get_context_RTs(output,prefix)
+if (!is.null (last_tweet_id)){
+  flag_append <- TRUE
+  flag_head <- FALSE
+}else{last_tweet_id <- 0}
+
+# Descarga
+for (i in 1:(length(list_tweets_id))){
+  if (list_tweets_id[[i]] > last_tweet_id){
+    print(glue("Download RTs from {list_tweets_url[[i]]} {i}/{length(list_tweets_id)}"))
+    users <- get_retweeters (list_tweets_id[[i]], n = 10000) 
+    if (length(users) >= 1){
+      df_users <- to_dataframe(users) %>%
+        mutate(
+          url_rt = list_tweets_url[[i]],
+          username = paste0("@",{username}),
+          user_retweeted = paste0("@",sub("https://x.com/(.*)/status/.*", "\\1", url_rt))) %>%
+        select(username, displayname, user_retweeted, url_rt)
+      write_csv (df_users, output_file, append = flag_append, col_names = flag_head)
+      flag_append <- TRUE
+      flag_head <- FALSE
+    }
+    put_context_RTs(output, prefix, list_tweets_id[[i]])
+    if (i < length(list_tweets_id)) {  # No esperar después de la última iteración
+      Sys.sleep(3)
+      print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
+      Sys.sleep(sleep_time-3)
+    }
+  }
+}
+
+```
