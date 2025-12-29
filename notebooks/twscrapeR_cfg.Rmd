@@ -1,0 +1,60 @@
+---
+title: "configuración de usuarios para twscrapeR"
+output: html_notebook
+---
+
+### Código
+
+#### Init notebook
+
+```{r setup, 	echo = FALSE,message = FALSE,	warning = FALSE,include=FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+require("knitr")
+## setting working directory
+opts_knit$set(root.dir = "./")
+```
+
+#### Import libraries
+
+```{r library}
+
+if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
+if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
+library("devtools")
+library("twscrapeR")
+
+```
+
+### Configuración Inicial
+
+Configura los usuarios para la descarga.. Solo hay que ejecutarlo una vez o cuando se añade un perfil
+
+Para extraer el auth_token y el cto
+
+-   Abre <https://x.com> en tu navegador (con sesión iniciada)
+-   Presiona F12 → "Application" → "Cookies" → "<https://x.com>"
+-   Copia los valores de auth_token y ct0
+-   Formato: "auth_token=valor1; ct0=valor2"
+
+```{r start-sesion, message=TRUE}
+
+for (user in  list_accounts()) {
+  delete_account(user$username)
+}
+print(list_accounts())
+add_account(
+  username = "xxxxxxxxxx",
+  password = "xxxxxxxxxx",
+  email = "xxxxxxxxxx@xxxxx.xxx",
+  email_password = "xxxxxxxxxx",
+  cookies = "auth_token=; ct0="
+)
+
+
+print(list_accounts())
+
+```
