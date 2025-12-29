@@ -16,7 +16,7 @@ Estos cuadernos utilizan la librería [**twscrapeR**](https://github.com/agusnie
 -   La descarga tiene Un ratelimit de 900 solicitudes por ventana de 15 minutos. A pesar de esta limitación, es posible descargar en un tiempo razonable los tuits originales ya que la mayoría son retuits
 -   En la descarga de los retweets solo baja los usuarios que han retuiteado un tuit dado. Es bastante más rápida y más ligera de datos que la de los tuits originales.
 
-### Estructura de los datos
+## Estructura de los datos
 
 ```         
 root ----+----data-+---- dataset_1
@@ -40,9 +40,9 @@ root ----+----data-+---- dataset_1
 
 El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo.
 
-### Notebooks
+## Notebooks
 
-#### twscrapeR_cfg.Rmd
+### twscrapeR_cfg.Rmd
 
 Configura los usuarios para la descarga. Solo hay que ejecutarlo una vez o cuando se añade un perfil
 
@@ -54,7 +54,7 @@ Es necesario incluir el token y el cto de un usuario. Para extraer el auth_token
 
 Formato: "auth_token=valor1; ct0=valor2"
 
-#### twscrapeR.Rmd
+### twscrapeR.Rmd
 
 **Funcionalidades**:
 
@@ -68,7 +68,7 @@ Formato: "auth_token=valor1; ct0=valor2"
 2.  Los datos se almacenan en formato csv
 3.  Guarda contexto de la descarga. Si se interrumpe, se reanudará en el punto que lo dejó
 
-#### twscraperR_charts.Rmd
+### twscraperR_charts.Rmd
 
 Genera un conjunto de gráficas parametrizables con los datos descargados con el cuaderno **twscapeR.Rmd**
 
