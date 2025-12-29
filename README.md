@@ -12,9 +12,9 @@ Notebooks para la descarga y visualización con la librería [**twscraperR**](ht
 
 Estos cuadernos utilizan la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) que es una alternativa para la descarga de datos de Twitter tras el cierra de las APIs con acceso gratuito. La librería utiliza Twitter GraphQL API lo que implica:
 
--   Cuando se realiza una búsqueda solo se obtienen los tuits originales
--   La descarga tiene Un ratelimit de 900 solicitudes por ventana de 15 minutos. A pesar de esta limitación, es posible descargar en un tiempo razonable los tuits originales ya que la mayoría son retuits
--   En la descarga de los retweets solo baja los usuarios que han retuiteado un tuit dado. Es bastante más rápida y más ligera de datos que la de los tuits originales.
+-   Cuando se realiza una búsqueda solo se obtienen los tweets originales
+-   La descarga tiene Un ratelimit de 900 solicitudes por ventana de 15 minutos. A pesar de esta limitación, es posible descargar en un tiempo razonable los tweets originales ya que la mayoría son retweets
+-   En la descarga de los retweets solo baja los usuarios que han retuiteado un tuit dado. Es bastante más rápida y más ligera de datos que la de los tweets originales.
 
 ## Estructura de los datos
 
@@ -56,6 +56,8 @@ Formato: "auth_token=valor1; ct0=valor2"
 
 ### twscrapeR.Rmd
 
+Permite descargar tweets de una consulta, de un usuario o los retweets
+
 **Funcionalidades**:
 
 1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
@@ -73,10 +75,10 @@ Formato: "auth_token=valor1; ct0=valor2"
 Genera un conjunto de gráficas parametrizables con los datos descargados con el cuaderno **twscapeR.Rmd**
 
 -   Impacto
-    -   Tuits vs. alcance con influencers (con o sin zoom)
-    -   Tuits vs. alcance
-    -   Tuits vs. RTs con influencers (con o sin zoom)
-    -   Tuits vs. RTs
+    -   Tweets vs. alcance con influencers (con o sin zoom)
+    -   Tweets vs. alcance
+    -   Tweets vs. RTs con influencers (con o sin zoom)
+    -   Tweets vs. RTs
     -   comments vs. RTs
 -   Palabras más frecuentes (sin amplificación o con ella)
 -   Menciones a Medios
@@ -96,11 +98,11 @@ Genera un conjunto de gráficas parametrizables para un perfil, con los datos de
     -   Ritmo semanal
     -   Ritmo anual
 -   Impacto
-    -   Tuits vs. favoritos
-    -   Tuits vs. Rts
-    -   Tuits vs. Citas
-    -   Tuits vs. comentarios
-    -   Tuits vs. Impresiones
+    -   Tweets vs. favoritos
+    -   Tweets vs. Rts
+    -   Tweets vs. Citas
+    -   Tweets vs. comentarios
+    -   Tweets vs. Impresiones
     -   Engagement
     -   Comentarios vs. RTs
 -   Palabras más frecuentes
@@ -120,7 +122,7 @@ El formato gdf es texto plano, compuesto de dos zonas:
 
 También permite acotarlo en un rango temporal.
 
-### twscrapeR_classyfy_tweets.Rmd
+### twscrapeR_classify_tweets.Rmd
 
 Este script clasifica los tweets según la "modularity class" calculada con Gephi. Para hacer la clasificación se necesitan:
 
@@ -138,6 +140,6 @@ Este script clasifica los tweets según la "modularity class" calculada con Geph
 
 **Resultados**
 
--   Un fichero con los tuits clasificados con su modularidad (prefijo_classified.csv) y otro con los no clasificados (prefijo_not_classified.csv)
--   Un fichero por comunidad con los textos de los tuits (prefijo\_\_community_n.csv) para NotebooLM
--   Si el parámetro block está a true, un fichero por bloque con los textos de los tuits (prefijo_blocks_xxxxxx.csv) para NotebooLM
+-   Un fichero con los tweets clasificados con su modularidad (prefijo_classified.csv) y otro con los no clasificados (prefijo_not_classified.csv)
+-   Un fichero por comunidad con los textos de los tweets (prefijo\_\_community_n.csv) para NotebooLM
+-   Si el parámetro block está a true, un fichero por bloque con los textos de los tweets (prefijo_blocks_xxxxxx.csv) para NotebooLM
