@@ -2,7 +2,7 @@
 
 Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
 
-## Instalación {#instalación}
+## Instalación
 
 1.  Visitar el repositorio de [**twscraperR**](https://github.com/agusnieto77/twscrapeR) para instalar la librería
 2.  Descargar los cuadernos de twscrapeR_notebook
@@ -40,7 +40,7 @@ root ----+----data-+---- dataset_1
 
 El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo.
 
-### Notebooks {#notebooks}
+### Notebooks
 
 #### twscrapeR_cfg.Rmd
 
