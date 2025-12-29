@@ -1,17 +1,3 @@
----
-title: "twscrapeR_notebook"
-author: "congosto"
-date: "2025-12-29"
-output: html_document
----
-
-## Índice
-
--   [Instalación](#Instalación)
--   [Visión general](#Visión%20general)
-    -   [Estructura de los datos](#Estructura%20de%20los%20datos)
-    -   [Notebooks](#Notebooks)
-
 # twscrapeR_notebook
 
 Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
