@@ -1,0 +1,157 @@
+---
+title: "twscrapeR_notebook"
+author: "congosto"
+date: "2025-12-29"
+output: html_document
+---
+
+## Índice
+
+-   [Instalación](#Instalación)
+-   [Visión general](#Visión%20general)
+    -   [Estructura de los datos](#Estructura%20de%20los%20datos)
+    -   [Notebooks](#Notebooks)
+
+# twscrapeR_notebook
+
+Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
+
+## Instalación {#instalación}
+
+1.  Visitar el repositorio de [**twscraperR**](https://github.com/agusnieto77/twscrapeR) para instalar la librería
+2.  Descargar los cuadernos de twscrapeR_notebook
+3.  Crear un proyecto en Rstudio
+
+## Visión general
+
+Estos cuadernos utilizan la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) que es una alternativa para la descarga de datos de Twitter tras el cierra de las APIs con acceso gratuito. La librería utiliza Twitter GraphQL API lo que implica:
+
+-   Cuando se realiza una búsqueda solo se obtienen los tuits originales
+-   La descarga tiene Un ratelimit de 900 solicitudes por ventana de 15 minutos. A pesar de esta limitación, es posible descargar en un tiempo razonable los tuits originales ya que la mayoría son retuits
+-   En la descarga de los retweets solo baja los usuarios que han retuiteado un tuit dado. Es bastante más rápida y más ligera de datos que la de los tuits originales.
+
+### Estructura de los datos
+
+```         
+root ----+----data-+---- dataset_1
+         |         |
+         |         +---- dataset_n
+         |
+         +---notebooks-+---- utils
+                       |
+                       +---- twscrapeR_cfg.Rmd
+                       |
+                       +---- twscrapeR.Rmd
+                       |
+                       +---- twscrapeR_charts.Rmd
+                       |
+                       +---- twscrapeR_charts_profile.Rmd
+                       |
+                       +---- twscrapeR_graph.Rmd
+                       |
+                       +---- twscrapeR_classifly_tweets.Rmd
+```
+
+El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo.
+
+### Notebooks {#notebooks}
+
+#### twscrapeR_cfg.Rmd
+
+Configura los usuarios para la descarga. Solo hay que ejecutarlo una vez o cuando se añade un perfil
+
+Es necesario incluir el token y el cto de un usuario. Para extraer el auth_token y el cto
+
+-   Abre <https://x.com> en tu navegador (con sesión iniciada)
+-   Presiona F12 → "Application" → "Cookies" → "<https://x.com>"
+-   Copia los valores de auth_token y ct0
+
+Formato: "auth_token=valor1; ct0=valor2"
+
+#### twscrapeR.Rmd
+
+**Funcionalidades**:
+
+1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
+2.  **Get Tweets Historical Timeline**: descarga el timeline de una lista de usuarios en un periodo definido con una frecuencia establecida. No se obtienen los RTs porque equivale a una consulta del tipo from:usuario
+3.  **Get Retweets**: descarga los usuarios que han hecho RT a los tweets de un dataset. El formato de los datos es diferente a las opciones 1 y 2
+
+**Para todas las descargas**:
+
+1.  En la extracción de datos, se especifica el rango de fechas inicial y final de la captura y la frecuencia de la descarga. La frecuencia se debe ajustar para que el número de tweets que se obtienen en cada petición no supere los 900 mensajes.
+2.  Los datos se almacenan en formato csv
+3.  Guarda contexto de la descarga. Si se interrumpe, se reanudará en el punto que lo dejó
+
+#### twscraperR_charts.Rmd
+
+Genera un conjunto de gráficas parametrizables con los datos descargados con el cuaderno **twscapeR.Rmd**
+
+-   Impacto
+    -   Tuits vs. alcance con influencers (con o sin zoom)
+    -   Tuits vs. alcance
+    -   Tuits vs. RTs con influencers (con o sin zoom)
+    -   Tuits vs. RTs
+    -   comments vs. RTs
+-   Palabras más frecuentes (sin amplificación o con ella)
+-   Menciones a Medios
+-   Topics
+    -   Evolución acumulada (con o sin zoom)
+    -   Evolución acumulada con amplificación (con o sin zoom)
+-   Comunidades
+    -   Palabras más frecuentes por comunidad
+    -   Tweets por comunidad
+
+### twscrapeR_charts_profile.Rmd
+
+Genera un conjunto de gráficas parametrizables para un perfil, con los datos descargados con el cuaderno **twscrapeR.Rmd** opción Get Tweets Historical Timeline
+
+-   Ritmo de publicación
+    -   Rutina diaria
+    -   Ritmo semanal
+    -   Ritmo anual
+-   Impacto
+    -   Tuits vs. favoritos
+    -   Tuits vs. Rts
+    -   Tuits vs. Citas
+    -   Tuits vs. comentarios
+    -   Tuits vs. Impresiones
+    -   Engagement
+    -   Comentarios vs. RTs
+-   Palabras más frecuentes
+-   Topics
+    -   Evolución acumulada
+
+### twscrapeR_graph.Rmd
+
+Genera un fichero gdf para que sirva de entrada a Gephi de un dataset descargado con **twscrapeR.Rmd**.
+
+Por el momento solo se ha implementado la relación RT. Posiblemente en un futuro se incorporen la relación de comentarios y citas .
+
+El formato gdf es texto plano, compuesto de dos zonas:
+
+-   Descripción de los nodos: en este caso serán los autores de los tweets con los siguientes atributos lang, Relaciones entrantes, relaciones salientes, total de relaciones
+-   Descripción de las relaciones: para cada relación, un par formado por el que interactúa y el interactuado
+
+También permite acotarlo en un rango temporal.
+
+### twscrapeR_classyfy_tweets.Rmd
+
+Este script clasifica los tweets según la "modularity class" calculada con Gephi. Para hacer la clasificación se necesitan:
+
+**Datos de entrada**
+
+-   El dataset con los tweets
+-   Un fichero exportado de Gephi con los datos de red de los perfiles
+
+**Clasificación**
+
+-   Se añade la columna "community" al dataset con los tweets en la que se aplicará:
+
+    -   La "modularity class" del autor del tweet si es un mensaje original, una cita o un comentario
+    -   En el caso de ser un retweet, se le asignará la "modularity class" del retuiteado.
+
+**Resultados**
+
+-   Un fichero con los tuits clasificados con su modularidad (prefijo_classified.csv) y otro con los no clasificados (prefijo_not_classified.csv)
+-   Un fichero por comunidad con los textos de los tuits (prefijo\_\_community_n.csv) para NotebooLM
+-   Si el parámetro block está a true, un fichero por bloque con los textos de los tuits (prefijo_blocks_xxxxxx.csv) para NotebooLM
