@@ -1,6 +1,6 @@
 # twscrapeR_notebook
 
-Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
+Notebooks para la descarga y visualización de tweets con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
 
 ## Instalación
 
