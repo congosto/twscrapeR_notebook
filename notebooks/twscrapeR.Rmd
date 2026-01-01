@@ -9,12 +9,11 @@ output:
 
 En este cuaderno se han adaptado las [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) a la forma de trabajar con t_hoarder_R.
 
-Esta librerías se basan en otras en Python por lo que preciso instalar previamente. 
+Esta librerías se basan en otras en Python por lo que preciso instalar previamente.
 
 Para instalar la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) seguir las instrucciones de su repositorio en github.
 
 Hay que disponer de al menos un usuario con sus credenciales (se explica en la documentación de la librería)
-
 
 ### Estructura de los datos
 
@@ -38,7 +37,7 @@ root ----+----data-+---- dataset_1
                        
 ```
 
-El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo. 
+El **dataset** es el directorio donde se almacenan los datos. Las capturas se distinguen por su prefijo. En un dataset puede haber ficheros con distintos prefijos, todo depende de cómo se organice el trabajo.
 
 ### Funcionalidades
 
@@ -58,16 +57,15 @@ La librería original en Python [twscrape](https://github.com/vladkens/twscrape)
 
 Si se quiere más velocidad, habría que construir un pool de usuarios para que cuando venza una limitación, se continúe con otro usuario. En este cuaderno no está implementado el uso del pool de usuarios pero se indica como hacerlo en el repositorio del la librería [twscrape](https://github.com/vladkens/twscrape)
 
-
-
 ### Cómo usar el cuaderno
 
 Se aconseja usarlo en **modo visual** para poder acceder a los chunks por índice.
 
 1.  Previamente los perfiles deben estar configurados (usar el cuaderno twscrapeR_cfg.Rmd)
-2.  Ejecutar los cuatro primeros chunk: init Notebook, Parche twscrape, impor , Import Fuctions
-3.  Elegir el tipo de descarga, rellenar los parámetros que se encuentran en el principio del chunk y ejecutarlo.
-4.  Si ocurre un error durante la descarga, se recomienda hacer un reset a R y empezar en el punto 5.  La descarga se reanudará en el punto que se dejó.
+2.  Ejecutar los dos primeros chunk: init Notebook, Parche twscrape. La actual librería python twscrape en que se basa la librería R twescrapeR no está actualizada en los últimos meses. Debido a un cambio de formato en el JSON, es necesario ejecutar este parche antes de importar la librería twscrapeR
+3.  Ejecutar los chunks import libraries y Import functions
+4.  Elegir el tipo de descarga, rellenar los parámetros que se encuentran en el principio del chunk y ejecutar el chunk.
+5.  Si ocurre un error durante la descarga, se recomienda hacer un reset a R y empezar en el punto 2. La descarga se reanudará en el punto que se dejó.
 
 ### Código inicial
 
@@ -88,9 +86,9 @@ opts_knit$set(root.dir = "./")
 
 #### Parche twscrape
 
-¡¡¡Atención!!! 
+¡¡¡Atención!!!
 
-La actual librería python twscrape en que se basa la librería R twescrapeR no está actualizada en los últimos meses. Debido a un cambio de formato en el JSON, es necesario ejecutar este parche antes de importar la librería twscrapeR
+Ejecutar este chunk antes del Import libraries
 
 ```{r parche twscrape}
 if(!"reticulate" %in% installed.packages()) {install.packages("reticulate")}
@@ -134,12 +132,12 @@ Elegir la descarga deseada. Previamente se rellenarán los parámetros
 ```{r Get-Tweets-Historical-Search, message=TRUE, warning=TRUE}
 # Parámetros
 data_path = "../data"
-dataset <- "xxxxxxxx"
-prefix <- "xxxxxxxx"
-query <- "xxxxxxxx"
-since <- "yyyy-mm-dd HH:MM:SS"
-until <- "yyyy-mm-dd HH:MM:SS"
-frecuency <- "6 hour"
+dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
+prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
+query <- "xxxxxxxx"             # Admite queries avanzadas
+since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
+until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
+frecuency <- "n intervalo"      # intervalo  <- hour | day | month| year
 sleep_time <- 5
   
 # Control de duración
@@ -172,7 +170,8 @@ if (length(date_sequence) > 1){
     if (length(tweets) >= 1){
       df_tweets <- to_dataframe(tweets) %>%
         mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>%
-        mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' '))
+        mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' ')) %>%
+        select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified)
       write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
       put_context_search(output, prefix, date_sequence[[i+1]])
       flag_append <- TRUE
@@ -186,14 +185,15 @@ if (length(date_sequence) > 1){
   }
 }
 
-# Ordenar y quitar repetidos
+# Limpiar, ordenar y quitar repetidos
 print ("Removing duplicates and sorting by user/date")
 output_order_file <- file.path(output,glue("{prefix}.csv"))
 
 tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
   group_by(id)  %>%
   slice(1) %>%
-  arrange(date)
+  arrange(date) %>%
+  filter(date >= since & date <= until )
 write_csv(tweets_meta, output_order_file)
 
 # Control de duración
@@ -204,25 +204,33 @@ print(glue("Last {last_time}"))
 
 #### Get Tweets Historical Timeline
 
-Descarga los tuits de una lista de usuarios 
+Descarga los tuits de una lista de usuarios
 
-La query que realiza es from:user since:xxx-xx-xx until:xxxx-xx-xx
+La query que realiza es **from:user since:yyyy-mm-dd HH:MM:SS until:yyyy-mm-dd HH:MM:SS**
 
 OJO!!! no descarga RTs realizados por el usuario, solo tweets propios
+
+list_users = c(
+
+"user_1"
+
+)
 
 ```{r Get-Tweets-Historical-Timeline, message=TRUE, warning=TRUE}
 # Parámetros
 data_path = "../data"
-dataset <- "xxxxxxxx"
-prefix <- "xxxxxxxx"
-since <- "yyyy-mm-dd HH:MM:SS"
-until <- "yyyy-mm-dd HH:MM:SS"
-frecuency <- "1 month"
+dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
+prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
+since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
+until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
+frecuency <- "n intervalo"      # intervalo  <- hour | day | month| year
 sleep_time <- 5
 
 # Lista de usuarios para descargar
 list_users = c(
-"xxxxxxxx"
+"user_1",
+"user_2",
+"uswer_n"
 )
 # Control de duración
 start_time <- Sys.time()
@@ -258,6 +266,8 @@ for (i_user in 1:(length(list_users))){
   user <- list_users[[i_user]]
   print(glue("--> download user {user}"))
   date_sequence <- seq(as.POSIXct(since_partial), as.POSIXct(until), by=frecuency)
+  # Si la última fecha no es la final, añadimos el resto
+  if (tail(date_sequence, 1) != until) { date_sequence <- c(date_sequence, until) }
   if (length(date_sequence) > 1){
     for (i_date in 1:(length(date_sequence) - 1))  {
       ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
@@ -269,7 +279,8 @@ for (i_user in 1:(length(list_users))){
         df_tweets <- to_dataframe(tweets) %>% 
           filter (tolower(username) == tolower(user)) %>%  # quitamos falsos positivos
           mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>% #quitamos saltos de línea
-          mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' '))
+          mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' ')) %>%
+          select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified)
         write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
         flag_append <- TRUE
         flag_head <- FALSE
@@ -291,7 +302,8 @@ output_order_file <- file.path(output,glue("{prefix}.csv"))
 tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
   group_by(id)  %>%
   slice(1) %>%
-  arrange(date)
+  arrange(date) %>%
+  filter(date >= since & date <= until )
 write_csv(tweets_meta, output_order_file)
 
 # Control de duración
@@ -306,9 +318,9 @@ print(glue("Last {last_time}"))
 ```{r Get-Tweets-Cites, message=TRUE, warning=TRUE}
 # Parámetros
 data_path = "../data"
-dataset <- "xxxxxxxx"
-prefix <- "xxxxxxxx"
-min_RTs <- 3  # Mínimo número de RTs para descargar RTs
+dataset <- "xxxxxxxx"  # Nombre del dataset (directorio)
+prefix <- "xxxxxxxx"   # Prefijo del fichero para los datos
+min_RTs <- n  # Mínimo número de RTs para descargar RTs
 sleep_time <- 5
 
 # Entorno ficheros
