@@ -7,11 +7,11 @@ output:
 
 ## twscrapeR.Rmd
 
-En este cuaderno se han adaptado las [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) a la forma de trabajar con t_hoarder_R.
+En este cuaderno se han adaptado el uso de la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) a la forma de trabajar con t_hoarder_R.
 
-Esta librerías se basan en otras en Python por lo que preciso instalar previamente.
+Esta librería se basa en la librería Python **twscrape**, por lo que preciso **instalar previamente Python**.
 
-Para instalar la librería [**twscrapeR**](https://github.com/agusnieto77/twscrapeR) seguir las instrucciones de su repositorio en github.
+Para instalar la librería **twscrapeR** seguir las instrucciones de [su repositorio en github](https://github.com/agusnieto77/twscrapeR).
 
 Hay que disponer de al menos un usuario con sus credenciales (se explica en la documentación de la librería)
 
@@ -159,6 +159,8 @@ if (!is.null (last_date)){
 
 # Descarga
 date_sequence <- seq(as.POSIXct(since), as.POSIXct(until), by=frecuency)
+# Si la última fecha no es la final, añadimos el resto
+if (tail(date_sequence, 1) != until) { date_sequence <- c(date_sequence, until) }
 if (length(date_sequence) > 1){
   for (i in 1:(length(date_sequence) - 1))  {
     ini_date = paste0(gsub(" ", "_", date_sequence[[i]]),"_UTC")
