@@ -47,7 +47,7 @@ get_context_search <- function(dataset, prefix){
 # Guarda el contexto los usuarios que va bajando
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-put_context_user <- function(dataset, date, order, username){
+put_context_user <- function(dataset, prefix, date, order, username){
   context_file <- file.path(dataset,paste0(prefix,"_users_context.csv"))
   if(!file.exists(dataset)) {
     dir.create(dataset)
@@ -72,7 +72,7 @@ put_context_user <- function(dataset, date, order, username){
 # Obtienen el contexto de la última descarga de de un usuario
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-get_context_user <- function(dataset, prefix, username){
+get_context_user <- function(dataset, prefix){
   context_file <- file.path(dataset,paste0(prefix,"_users_context.csv"))
   if(!file.exists(dataset)) {
     dir.create(dataset)
