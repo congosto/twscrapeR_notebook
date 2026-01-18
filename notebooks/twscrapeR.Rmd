@@ -44,6 +44,7 @@ El **dataset** es el directorio donde se almacenan los datos. Las capturas se di
 1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
 2.  **Get Tweets Historical Timeline**: descarga el timeline de una lista de usuarios en un periodo definido con una frecuencia establecida. No se obtienen los RTs porque equivale a una consulta del tipo from:usuario
 3.  **Get Retweets**: descarga los usuarios que han hecho RT a los tweets de un dataset. El formato de los datos es diferente a las opciones 1 y 2
+4.  **Get replies**: descarga las respuestas de los tweets de un dataset desde los n días especificados tras la publicación de cada tweet, con una frecuencia especificada.
 
 **Para todas las descargas**:
 
@@ -65,7 +66,8 @@ Se aconseja usarlo en **modo visual** para poder acceder a los chunks por índic
 2.  Ejecutar los dos primeros chunk: init Notebook, Parche twscrape. La actual librería python twscrape en que se basa la librería R twescrapeR no está actualizada en los últimos meses. Debido a un cambio de formato en el JSON, es necesario ejecutar este parche antes de importar la librería twscrapeR
 3.  Ejecutar los chunks import libraries y Import functions
 4.  Elegir el tipo de descarga, rellenar los parámetros que se encuentran en el principio del chunk y ejecutar el chunk.
-5.  Si ocurre un error durante la descarga, se recomienda hacer un reset a R y empezar en el punto 2. La descarga se reanudará en el punto que se dejó.
+5.  Si ocurre un error durante la descarga, se recomienda hacer un reset a R y empezar en el punto 2, La descarga se reanudará en el punto que se dejó.
+6.  Se pueden recibir tweets duplicados o fuera del rango de fechas. Se generan dos datset el prefix_raw.csv con los tweets descargados y el prefix.csv con los tweets limpios
 
 ### Código inicial
 
@@ -104,13 +106,16 @@ source_python("../scripts/parche_twscrape.py")
 
 ```{r library}
 if(!"tidyverse" %in% installed.packages()) {install.packages("tidyverse")}
-if(!"chromote" %in% installed.packages()) {install.packages("chromote")}
 if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
+if(!"lubridate" %in% installed.packages()) {install.packages("lubridate")}
 if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
+
+library(lubridate)
 if(!"glue" %in% installed.packages()) {install.packages("glue")}
 library("dplyr")
 library("stringr")
 library("readr")
+library("lubridate")
 library("twscrapeR")
 library("glue")
 
@@ -120,7 +125,7 @@ library("glue")
 
 ```{r funtions, include=FALSE}
 source("utils/context.R")   # Funciones contexto de la descarga
-
+source("utils/clean_tweets.R")   # Funciones contexto de la descarga
 ```
 
 ### Código de descargas
@@ -130,23 +135,23 @@ Elegir la descarga deseada. Previamente se rellenarán los parámetros
 #### Get Tweets Historical Search
 
 ```{r Get-Tweets-Historical-Search, message=TRUE, warning=TRUE}
-# Parámetros
 data_path = "../data"
 dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
 query <- "xxxxxxxx"             # Admite queries avanzadas
 since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
 until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
-frecuency <- "n intervalo"      # intervalo  <- hour | day | month| year
-sleep_time <- 5
-  
+frecuency <- "n intervalo"      # Intervalo  <- hour | day | week | month| year
+sleep_time <- 15                # Tiempo entre peticiones en segundos
+# Hora UTC
+
 # Control de duración
 start_time <- Sys.time()
 print(glue("Start at {start_time}"))
 # Entorno ficheros
 output <- file.path(data_path,dataset)
 output_file <- file.path(output,glue("{prefix}.csv"))
-
+output_raw_file <- file.path(output,paste0(prefix,"_raw.csv"))
 # Contexto
 flag_append <- FALSE
 flag_head <- TRUE
@@ -156,25 +161,34 @@ if (!is.null (last_date)){
   flag_head <- FALSE
   since <- last_date
 }
-
+since <- as.POSIXct(since, tz = "UTC")
+until <- as.POSIXct(until, tz = "UTC")
 # Descarga
-date_sequence <- seq(as.POSIXct(since), as.POSIXct(until), by=frecuency)
+date_sequence <- seq(since, until, by=frecuency)
 # Si la última fecha no es la final, añadimos el resto
 if (tail(date_sequence, 1) != until) { date_sequence <- c(date_sequence, until) }
 if (length(date_sequence) > 1){
   for (i in 1:(length(date_sequence) - 1))  {
+    # Fecha para comprobar rango 
+    min_date <- as.POSIXct(date_sequence[[i]], tz = "UTC")
+    max_date <- as.POSIXct(date_sequence[[i+1]], tz = "UTC")
+    # Fecha para la query
     ini_date = paste0(gsub(" ", "_", date_sequence[[i]]),"_UTC")
     end_date = paste0(gsub(" ", "_", date_sequence[[i+1]]),"_UTC")
+    # Query
     print(glue("Desde {ini_date} hasta {end_date}"))
     query_date <- glue("{query} since:{ini_date} until:{end_date}")
     print(glue("--> Descargando {query_date} ......"))
     tweets <- search_tweets(query_date, n = 900)
     if (length(tweets) >= 1){
       df_tweets <- to_dataframe(tweets) %>%
-        mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>%
-        mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' ')) %>%
         select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified)
-      write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
+      df_tweets <- clean_text(df_tweets)
+        # Escribir los datos en crudo
+        write_csv (df_tweets, output_raw_file, append = flag_append, col_names = flag_head)
+        # Escribir los datos limpios
+        df_tweets <- clean_tweets(df_tweets, min_date, max_date)
+        write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
       put_context_search(output, prefix, date_sequence[[i+1]])
       flag_append <- TRUE
       flag_head <- FALSE
@@ -189,14 +203,9 @@ if (length(date_sequence) > 1){
 
 # Limpiar, ordenar y quitar repetidos
 print ("Removing duplicates and sorting by user/date")
-output_order_file <- file.path(output,glue("{prefix}.csv"))
-
-tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
-  group_by(id)  %>%
-  slice(1) %>%
-  arrange(date) %>%
-  filter(date >= since & date <= until )
-write_csv(tweets_meta, output_order_file)
+tweets_meta <- read_csv(output_file, show_col_types = FALSE)
+tweets_meta <- clean_tweets(tweets_meta, since, until)
+write_csv(tweets_meta, output_file)
 
 # Control de duración
 end_time <- Sys.time()
@@ -225,15 +234,16 @@ dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
 since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
 until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
-frecuency <- "n intervalo"      # intervalo  <- hour | day | month| year
-sleep_time <- 5
+frecuency <- "n intervalo"      # Intervalo  <- hour | day | week | month| year
+sleep_time <- 15                # Tiempo entre peticiones en segundos
 
 # Lista de usuarios para descargar
 list_users = c(
-"user_1",
-"user_2",
-"uswer_n"
+"congosto"
 )
+# Hora UTC
+since <- as.POSIXct(since, tz = "UTC")
+until <- as.POSIXct(until, tz = "UTC")
 # Control de duración
 start_time <- Sys.time()
 print(glue("Start at {start_time}"))
@@ -241,8 +251,7 @@ print(glue("Start at {start_time}"))
 # Entorno ficheros
 output <- file.path(data_path,dataset)
 output_file <- file.path(output,paste0(prefix,".csv"))
-output_meta_file <- file.path(output,paste0(prefix,".csv"))
-
+output_raw_file <- file.path(output,paste0(prefix,"_raw.csv"))
 #contexto
 flag_append <- FALSE
 flag_head <- TRUE
@@ -262,33 +271,42 @@ for (i_user in 1:(length(list_users))){
       if (list_users[[i_user]] == users_downloaded[[i_user]]){
         since_partial <- gsub("_UTC","",dates_downloaded[[i_user]])
         since_partial <- gsub("_"," ", since_partial)
+        since_partial <- as.POSIXct(since_partial, tz = "UTC")
       }
     }
   }
   user <- list_users[[i_user]]
   print(glue("--> download user {user}"))
-  date_sequence <- seq(as.POSIXct(since_partial), as.POSIXct(until), by=frecuency)
+  date_sequence <- seq(since_partial,until, by=frecuency)
   # Si la última fecha no es la final, añadimos el resto
   if (tail(date_sequence, 1) != until) { date_sequence <- c(date_sequence, until) }
   if (length(date_sequence) > 1){
     for (i_date in 1:(length(date_sequence) - 1))  {
+      # Fecha para comprobar rango 
+      min_date <- as.POSIXct(date_sequence[[i_date]], tz = "UTC")
+      max_date <- as.POSIXct(date_sequence[[i_date+1]], tz = "UTC")
+      # Fecha para la query
       ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
       end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]),"_UTC")
+      # Query
       print(glue("Desde {ini_date} hasta {end_date}"))
       query_date <- glue("from:{user} since:{ini_date} until:{end_date}")
       tweets <- search_tweets(query_date, n = 900)
       if (length(tweets) >= 1){
         df_tweets <- to_dataframe(tweets) %>% 
           filter (tolower(username) == tolower(user)) %>%  # quitamos falsos positivos
-          mutate (text = str_replace_all (text, '[\n\r]+',' ')) %>% #quitamos saltos de línea
-          mutate (user_displayname = str_replace_all (user_displayname, '[\n\r]+',' ')) %>%
           select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified)
+        df_tweets <- clean_text(df_tweets)
+        # Escribir los datos en crudo
+        write_csv (df_tweets, output_raw_file, append = flag_append, col_names = flag_head)
+        # Escribir los datos limpios
+        df_tweets <- clean_tweets(df_tweets, min_date, max_date)
         write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
         flag_append <- TRUE
         flag_head <- FALSE
       }
       print(glue("último {end_date}"))
-      put_context_user(output, end_date,i_user, user)
+      put_context_user(output, prefix, end_date,i_user, user)
       if (i_date < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
         Sys.sleep(3)
         print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
@@ -297,16 +315,11 @@ for (i_user in 1:(length(list_users))){
     }
   }
 }
-# Ordenar y quitar repetidos
+# Limpiar, ordenar y quitar repetidos
 print ("Removing duplicates and sorting by user/date")
-output_order_file <- file.path(output,glue("{prefix}.csv"))
-
-tweets_meta <- read_csv(output_file, show_col_types = FALSE) %>%
-  group_by(id)  %>%
-  slice(1) %>%
-  arrange(date) %>%
-  filter(date >= since & date <= until )
-write_csv(tweets_meta, output_order_file)
+tweets_meta <- read_csv(output_file, show_col_types = FALSE)
+tweets_meta <- clean_tweets(tweets_meta, since, until)
+write_csv(tweets_meta, output_file)
 
 # Control de duración
 end_time <- Sys.time()
@@ -322,9 +335,8 @@ print(glue("Last {last_time}"))
 data_path = "../data"
 dataset <- "xxxxxxxx"  # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"   # Prefijo del fichero para los datos
-min_RTs <- n  # Mínimo número de RTs para descargar RTs
-sleep_time <- 5
-
+min_RTs <- n           # Mínimo número de RTs para descargar RTs
+sleep_time <- 15       # Tiempo entre peticiones en segundos
 # Entorno ficheros
 file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
 output <- file.path(data_path,dataset)
@@ -368,6 +380,90 @@ for (i in 1:(length(list_tweets_id))){
       Sys.sleep(3)
       print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
       Sys.sleep(sleep_time-3)
+    }
+  }
+}
+
+```
+
+#### Get replies
+
+```{r Get-Tweets-Cites, message=TRUE, warning=TRUE}
+
+# Parámetros
+data_path = "../data"
+dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
+prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
+min_replies <- n                # Mínimo número de comentarios para descargar
+last <- 4                       # Número de días a partir de la fecha del tweet
+frecuency <- "n intervalo"      # Intervalo <- hour | day | week | month | year
+sleep_time <- 15                # Tiempo entre peticiones en segundos
+
+# Entorno ficheros
+file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
+output <- file.path(data_path,dataset)
+output_file <- file.path(output,paste0(prefix,"_replies.csv"))
+output_raw_file <- file.path(output,paste0(prefix,"_replies_raw.csv"))
+
+# Seleccionar tweets para descargar sus comentarios
+tweets <- read_csv(file_in, show_col_types = FALSE) %>%
+  filter (reply_count >= min_replies) %>%
+  mutate(tweet_id = str_extract(url, "\\d+$")) %>%
+  arrange(tweet_id)
+list_tweets_date <- tweets$date
+list_tweets_id <- tweets$tweet_id
+list_tweets_url <- tweets$url
+
+# Contexto
+flag_append <- FALSE
+flag_head <- TRUE
+last_tweet_id <- get_context_replies(output,prefix)
+if (!is.null (last_tweet_id)){
+  flag_append <- TRUE
+  flag_head <- FALSE
+}else{last_tweet_id <- 0}
+
+# Descarga
+for (i in 1:(length(list_tweets_id))){
+  if (list_tweets_id[[i]] > last_tweet_id){
+    print(glue("Download replies from {list_tweets_url[[i]]} {i}/{length(list_tweets_id)}"))
+    id_actual <- list_tweets_id[[i]]
+    since <- as.POSIXct(list_tweets_date[[i]], tz = "UTC")
+    until <- as.POSIXct(list_tweets_date[[i]], tz = "UTC") + (last*24*3600)
+    date_sequence <- seq(since, until, by=frecuency)
+    # Si la última fecha no es la final, añadimos el resto
+    if (tail(date_sequence, 1) != until) { date_sequence <- c(date_sequence, until) }
+    if (length(date_sequence) > 1){
+      for (i_date in 1:(length(date_sequence) - 1))  {
+        # Fecha para comprobar rango 
+        min_date <- as.POSIXct(date_sequence[[i_date]], tz = "UTC")
+        max_date <- as.POSIXct(date_sequence[[i_date+1]], tz = "UTC")
+        # Fecha para la query
+        ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
+        end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]),"_UTC")
+        query <- glue("conversation_id:{id_actual} filter:replies since:{ini_date} until:{end_date}")
+        print(glue("--> Descargando {query} ......"))
+        tweets <- search_tweets(query, n = 900)
+        if (length(tweets) >= 1){
+          df_tweets <- to_dataframe(tweets) %>%
+          mutate(url_replied = list_tweets_url[[i]]) %>%
+          select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified, url_replied)
+          df_tweets <- clean_text(df_tweets)
+          # Escribir los datos en crudo
+          write_csv (df_tweets, output_raw_file, append = flag_append, col_names = flag_head)
+          # Escribir los datos limpios
+          df_tweets <- clean_tweets(df_tweets, min_date, max_date)
+          write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
+          put_context_replies(output, prefix, list_tweets_id[[i]])
+          flag_append <- TRUE
+          flag_head <- FALSE
+        }
+        if (i < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
+          Sys.sleep(3)
+          print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
+          Sys.sleep(sleep_time-3)
+        }
+      }
     }
   }
 }
