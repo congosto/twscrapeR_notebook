@@ -1,60 +1,147 @@
 ---
-title: "configuración de usuarios para twscrapeR"
+title: "Configuracion de POOL de usuarios para twscrapeR (2 cuentas)"
 output: html_notebook
 ---
 
-### Código
+## twscrapeR.Rmd
+
+Este cuaderno configura un **pool de 2 cuentas** para twscrape. Con 2 cuentas, cuando una alcance el rate limit (900 req/15min), automáticamente usara la otra.
+
+**Velocidad estimada**: \~1800 tweets / 15 min (el doble que con 1 cuenta)
+
+### Como funciona el pool
+
+1.  Las cuentas se guardan en un archivo `accounts.db` (SQLite)
+2.  twscrape automaticamente rota entre cuentas cuando una se bloquea
+3.  Solo necesitas ejecutar este cuaderno **una vez** (o cuando cambien las cookies)
+
+### Como obtener las cookies
+
+Para cada cuenta:
+
+1.  Abre <https://x.com> en tu navegador (con sesión iniciada en esa cuenta)
+2.  Presiona F12 -\> "Application" -\> "Cookies" -\> "<https://x.com>"
+3.  Copia los valores de `auth_token` y `ct0`
+4.  Formato: `"auth_token=VALOR1; ct0=VALOR2"`
+
+**IMPORTANTE**:
+
+1.  **Las cookies caducan**: Si ves errores de autenticación, extrae nuevas cookies de x.com
+2.  **No compartas este archivo**: Contiene credenciales sensibles
+3.  **Usa cuentas diferentes**: No uses la misma cuenta muchas veces seguidas
+4.  **IPs diferentes** (recomendado): Si usas proxies, asigna IPs diferentes a cada cuenta
+
+------------------------------------------------------------------------
+
+### Codigo
 
 #### Init notebook
 
-```{r setup, 	echo = FALSE,message = FALSE,	warning = FALSE,include=FALSE, cache = FALSE}
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, cache=FALSE}
 knitr::opts_chunk$set(
 	echo = FALSE,
 	message = FALSE,
 	warning = FALSE
 )
 require("knitr")
-## setting working directory
 opts_knit$set(root.dir = "./")
 ```
 
 #### Import libraries
 
 ```{r library}
-
 if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
 if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
 library("devtools")
 library("twscrapeR")
+```
+
+#### Ver cuentas actuales (opcional)
+
+Ejecuta este chunk para ver que cuentas tienes configuradas actualmente:
+
+```{r ver-cuentas}
+print("=== CUENTAS ACTUALES EN EL POOL ===")
+print(list_accounts())
+```
+
+#### Limpiar todas las cuentas (opcional)
+
+**ATENCION**: Solo ejecuta este chunk si quieres BORRAR todas las cuentas y empezar de cero:
+
+```{r limpiar-cuentas, eval=FALSE}
+# CUIDADO: Esto borra TODAS las cuentas del pool
+for (user in list_accounts()) {
+  delete_account(user$username)
+}
+print("Todas las cuentas han sido eliminadas")
 
 ```
 
-### Configuración Inicial
+#### Configurar Pool de 2 Cuentas
 
-Configura los usuarios para la descarga.. Solo hay que ejecutarlo una vez o cuando se añade un perfil
+Rellena los datos de tus dos cuentas y ejecuta este chunk:
 
-Para extraer el auth_token y el cto
-
--   Abre <https://x.com> en tu navegador (con sesión iniciada)
--   Presiona F12 → "Application" → "Cookies" → "<https://x.com>"
--   Copia los valores de auth_token y ct0
--   Formato: "auth_token=valor1; ct0=valor2"
-
-```{r start-sesion, message=TRUE}
-
-for (user in  list_accounts()) {
-  delete_account(user$username)
-}
-print(list_accounts())
+```{r configurar-pool-2-cuentas, message=TRUE}
+# =============================================================================
+# CUENTA 1
+# =============================================================================
 add_account(
-  username = "xxxxxxxxxx",
-  password = "xxxxxxxxxx",
-  email = "xxxxxxxxxx@xxxxx.xxx",
-  email_password = "xxxxxxxxxx",
-  cookies = "auth_token=; ct0="
+  username = "USUARIO_1",
+  password = "PASSWORD_1",
+  email = "EMAIL_USUARIO_1@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_USUARIO_1",
+  cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_1; ct0=TU_CT0_USUARIO_1"
 )
 
 
-print(list_accounts())
+# =============================================================================
+# CUENTA 2
+# =============================================================================
+add_account(
+  username = "USUARIO_2",
+  password = "PASSWORD_2",
+  email = "EMAIL_USUARIO_2@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_USUARIO_2",
+  cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_2; ct0=TU_CT0_USUARIO_2"
+)
 
+# =============================================================================
+# VERIFICACION
+# =============================================================================
+print("=== POOL DE CUENTAS CONFIGURADO ===")
+cuentas <- list_accounts()
+print(paste("Total de cuentas en el pool:", length(cuentas)))
+print(cuentas)
 ```
+
+#### Anadir una cuenta adicional (opcional)
+
+Si mas adelante quieres añadir una tercera cuenta sin borrar las existentes:
+
+```{r anadir-cuenta-extra, eval=FALSE}
+add_account(
+  username = "USUARIO_EXTRA",
+  password = "PASSWORD_EXTRA",
+  email = "email_extra@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_EXTRA",
+  cookies = "auth_token=TU_AUTH_TOKEN_EXTRA; ct0=TU_CT0_EXTRA"
+)
+
+print("=== CUENTA ANADIDA ===")
+print(list_accounts())
+```
+
+#### Eliminar una cuenta especifica (opcional)
+
+Si necesitas eliminar una cuenta especifica del pool:
+
+```{r eliminar-cuenta-especifica, eval=FALSE}
+# Cambia "nombre_usuario" por el username que quieres eliminar
+delete_account("nombre_usuario")
+
+print("=== CUENTA ELIMINADA ===")
+print(list_accounts())
+```
+
+------------------------------------------------------------------------
