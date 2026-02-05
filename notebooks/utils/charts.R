@@ -6,7 +6,7 @@
 # Chart line de doble escala del total tweets vs alcance de los mismos
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-draw_tweets_vs_reach_influencers <- function(df, ini_date, end_date, nin_reproducciones, max_overlaps,events) {
+draw_tweets_vs_reach_influencers <- function(df, ini_date, end_date, min_reproducciones, max_overlaps,events) {
 
   df <- df %>% 
     filter(date >= ini_date & date <= end_date)
@@ -29,7 +29,7 @@ draw_tweets_vs_reach_influencers <- function(df, ini_date, end_date, nin_reprodu
     group_by(date, username ) %>%
     summarise(
       reach = sum(views_count),
-      influencer = ifelse(reach >= nin_reproducciones, username, NA),
+      influencer = ifelse(reach >= min_reproducciones, username, NA),
       .groups = 'drop'
     ) %>%
     ungroup() %>%
@@ -102,7 +102,7 @@ draw_tweets_vs_reach_influencers <- function(df, ini_date, end_date, nin_reprodu
         Tweets</span> per {slot_time} vs <span style='color:{color_reach}'>
         Reach influencers</span>"
       ),
-      subtitle = glue("Reach influencers  >= {label_number(scale_cut = cut_si(''))(nin_reproducciones)}"),
+      subtitle = glue("Reach influencers  >= {label_number(scale_cut = cut_si(''))(min_reproducciones)}"),
       x = "", 
       color=""
     ) +
@@ -667,22 +667,21 @@ draw_tweets_vs_RTs <- function(df, ini_date, end_date) {
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overlaps) {
-
   df <- df %>% 
       filter(date >= ini_date & date <= end_date)
   # Seleccionamos los perfiles con más comentarios 
   comments_RTs_df <- df %>% 
-  group_by(username, reply_count) %>%
-  summarise(
+  mutate(
     num_comments = reply_count,
     num_RTs = retweet_count,
     possible_controversy = (ifelse(num_comments > num_RTs,1,0)),
-    .groups = 'drop'
   ) %>% 
-  ungroup() %>%
   filter (num_comments >= min_comments)
   max_comments <- max(comments_RTs_df$num_comments, na.rm = TRUE)
   max_RTs <- max(comments_RTs_df$num_RTs, na.rm = TRUE)
+  size_x <- max_RTs
+  if (max_comments > max_RTs){size_x <- max_comments} 
+
   p <- ggplot() + 
     # Pintamos los comentarios y RTs
     geom_point(
@@ -713,9 +712,9 @@ draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overl
     geom_text(
       data = comments_RTs_df,
       aes(
-        x = max_RTs * 0.15, # 6% desde el inicio 
+        x = max_RTs * 0.25, # 12% desde el inicio 
         y = max_comments * 1.1 ,
-        label = glue("{round(sum(possible_controversy)*100 / nrow(comments_RTs_df),0)}% controversy")
+        label = glue("{round(sum(possible_controversy)*100 / nrow(comments_RTs_df),1)}% controversy")
       ),
       color = COLOR_TEXTO,
       size = 4
@@ -730,7 +729,7 @@ draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overl
       alpha = 0.4  # Rellenar con color
     ) +
     scale_x_continuous(
-      limits= c(0,max_RTs*1.1),
+      limits= c(0,size_x*1.1),
       expand= c(0,0)
       ) +
     scale_y_continuous(
