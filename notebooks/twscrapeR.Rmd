@@ -44,7 +44,8 @@ El **dataset** es el directorio donde se almacenan los datos. Las capturas se di
 1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
 2.  **Get Tweets Historical Timeline**: descarga el timeline de una lista de usuarios en un periodo definido con una frecuencia establecida. No se obtienen los RTs porque equivale a una consulta del tipo from:usuario
 3.  **Get Retweets**: descarga los usuarios que han hecho RT a los tweets de un dataset. El formato de los datos es diferente a las opciones 1 y 2
-4.  **Get replies**: descarga las respuestas de los tweets de un dataset desde los n días especificados tras la publicación de cada tweet, con una frecuencia especificada.
+4.  **Get replies**: descarga las respuestas de los tweets con la función tweet_replies() .
+4.  **Get replies avanzadas **: descarga las respuestas de los tweets de un dataset desde los n días especificados tras la publicación de cada tweet, con una frecuencia especificada. Usa la función search_tweets (). Adicionalmente, descarga los comentarios de los comentarios y obtiene hilos de conversaciones.
 
 **Para todas las descargas**:
 
@@ -86,18 +87,55 @@ require("knitr")
 opts_knit$set(root.dir = "./")
 ```
 
-#### Parche twscrape
+#### Comprobar versión de twscrape
 
 ¡¡¡Atención!!!
 
 Ejecutar este chunk antes del Import libraries
 
+
 ```{r parche twscrape}
-if(!"reticulate" %in% installed.packages()) {install.packages("reticulate")}
+# 1. Especificar entorno ANTES de cargar la librería
+use_miniconda <- FALSE
+# Opción A: miniconda
+# Se asume que se ha instalado un entorno llamado "reticulate" en miniconda
+if (use_miniconda) {
+  Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
+} else {
+  # Opción B: Python directo
+  setup_twscraper()
+}
+# 2. Instalar y cargar reticulate
+if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
 library(reticulate)
-use_python("C:/Users/User/anaconda3/python.exe", required = TRUE)  # Ajusta la ruta según tu sistema
-# Importar y ejecutar el parche
-source_python("../scripts/parche_twscrape.py")
+
+# 3. Especificar entorno conda (solo una vez, después de library)
+if (use_miniconda) {
+  reticulate::use_condaenv("reticulate", required = TRUE)
+}
+
+# 4. Comprobar versión de twscrape e instalar si es necesaria
+tryCatch({
+  twscrape <- reticulate::import("twscrape")
+  version_actual <- twscrape$`__version__`
+  
+  version_a_numeric <- function(v) {
+    parts <- as.integer(strsplit(v, "\\.")[[1]])
+    parts[1] * 10000 + parts[2] * 100 + ifelse(length(parts) >= 3, parts[3], 0)
+  }
+  
+  if (version_a_numeric(version_actual) < version_a_numeric("0.18.0")) {
+    message("twscrape ", version_actual, " es inferior a 0.18.0. Actualizando...")
+    reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+  } else {
+    message("twscrape ", version_actual, " ya cumple el requisito (>=0.18.0).")
+  }
+  
+}, error = function(e) {
+  message("twscrape no encontrado. Instalando...")
+  reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+})
 
 
 ```
@@ -110,9 +148,9 @@ if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
 if(!"lubridate" %in% installed.packages()) {install.packages("lubridate")}
 if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
 
-library(lubridate)
 if(!"glue" %in% installed.packages()) {install.packages("glue")}
 library("dplyr")
+library("purrr")
 library("stringr")
 library("readr")
 library("lubridate")
@@ -141,9 +179,8 @@ prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
 query <- "xxxxxxxx"             # Admite queries avanzadas
 since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
 until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
-frecuency <- "n intervalo"      # Intervalo  <- hour | day | week | month| year
-sleep_time <- 15                # Tiempo entre peticiones en segundos
-# Hora UTC
+frecuency <- "n intervalo"      # Intervalo  <- min | hour | day | week | month| year
+sleep_time <- 5                 # Tiempo entre peticiones en segundos
 
 # Control de duración
 start_time <- Sys.time()
@@ -179,7 +216,7 @@ if (length(date_sequence) > 1){
     print(glue("Desde {ini_date} hasta {end_date}"))
     query_date <- glue("{query} since:{ini_date} until:{end_date}")
     print(glue("--> Descargando {query_date} ......"))
-    tweets <- search_tweets(query_date, n = 900)
+    tweets <- search_tweets(query_date, n = 900, product = "Top")
     if (length(tweets) >= 1){
       df_tweets <- to_dataframe(tweets) %>%
         select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified)
@@ -189,14 +226,13 @@ if (length(date_sequence) > 1){
         # Escribir los datos limpios
         df_tweets <- clean_tweets(df_tweets, min_date, max_date)
         write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
-      put_context_search(output, prefix, date_sequence[[i+1]])
       flag_append <- TRUE
       flag_head <- FALSE
     }
+    put_context_search(output, prefix, date_sequence[[i+1]])
     if (i < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
-      Sys.sleep(3)
       print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
-      Sys.sleep(sleep_time-3)
+      Sys.sleep(sleep_time)
     }
   }
 }
@@ -208,9 +244,8 @@ tweets_meta <- clean_tweets(tweets_meta, since, until)
 write_csv(tweets_meta, output_file)
 
 # Control de duración
-end_time <- Sys.time()
-last_time <- Sys.time() - start_time
-print(glue("Last {last_time}"))
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+print(glue("Duración total: {round(elapsed, 2)} minutos"))
 ```
 
 #### Get Tweets Historical Timeline
@@ -221,12 +256,6 @@ La query que realiza es **from:user since:yyyy-mm-dd HH:MM:SS until:yyyy-mm-dd H
 
 OJO!!! no descarga RTs realizados por el usuario, solo tweets propios
 
-list_users = c(
-
-"user_1"
-
-)
-
 ```{r Get-Tweets-Historical-Timeline, message=TRUE, warning=TRUE}
 # Parámetros
 data_path = "../data"
@@ -234,12 +263,14 @@ dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
 since <- "yyyy-mm-dd HH:MM:SS"  # Fecha de inicio de los tweets
 until <- "yyyy-mm-dd HH:MM:SS"  # Fecha fin de los tweets
-frecuency <- "n intervalo"      # Intervalo  <- hour | day | week | month| year
-sleep_time <- 15                # Tiempo entre peticiones en segundos
+frecuency <- "n intervalo"      # Intervalo  <- min | hour | day | week | month| year
+sleep_time <- 5                # Tiempo entre peticiones en segundos
 
 # Lista de usuarios para descargar
 list_users = c(
-"congosto"
+  "xxxxxxxx",
+  "xxxxxxxx"
+
 )
 # Hora UTC
 since <- as.POSIXct(since, tz = "UTC")
@@ -291,7 +322,7 @@ for (i_user in 1:(length(list_users))){
       # Query
       print(glue("Desde {ini_date} hasta {end_date}"))
       query_date <- glue("from:{user} since:{ini_date} until:{end_date}")
-      tweets <- search_tweets(query_date, n = 900)
+      tweets <- search_tweets(query_date, n = 900, product = "Top")
       if (length(tweets) >= 1){
         df_tweets <- to_dataframe(tweets) %>% 
           filter (tolower(username) == tolower(user)) %>%  # quitamos falsos positivos
@@ -308,9 +339,8 @@ for (i_user in 1:(length(list_users))){
       print(glue("último {end_date}"))
       put_context_user(output, prefix, end_date,i_user, user)
       if (i_date < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
-        Sys.sleep(3)
         print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
-        Sys.sleep(sleep_time-3)
+        Sys.sleep(sleep_time)
       }
     }
   }
@@ -322,30 +352,33 @@ tweets_meta <- clean_tweets(tweets_meta, since, until)
 write_csv(tweets_meta, output_file)
 
 # Control de duración
-end_time <- Sys.time()
-last_time <- Sys.time() - start_time
-print(glue("Last {last_time}"))
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+print(glue("Duración total: {round(elapsed, 2)} minutos"))
 
 ```
 
 #### Get Retweets
 
-```{r Get-Tweets-Cites, message=TRUE, warning=TRUE}
+```{r Get-Retweets, message=TRUE, warning=TRUE}
 # Parámetros
 data_path = "../data"
 dataset <- "xxxxxxxx"  # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"   # Prefijo del fichero para los datos
-min_RTs <- n           # Mínimo número de RTs para descargar RTs
-sleep_time <- 15       # Tiempo entre peticiones en segundos
+min_RTs <- 1           # Mínimo número de RTs para descargar RTs
+sleep_time <- 5        # Tiempo entre peticiones en segundos
+
+start_time <- Sys.time()
+print(glue("Start at {start_time}"))
 # Entorno ficheros
 file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
 output <- file.path(data_path,dataset)
 output_file <- file.path(output,paste0(prefix,"_RTs.csv"))
 
-# Seleccionar tweets para descargar sus comentarios
+# Seleccionar tweets para descargar sus RTs
 tweets <- read_csv(file_in, show_col_types = FALSE) %>%
   filter (retweet_count >= min_RTs) %>%
   mutate(tweet_id = str_extract(url, "\\d+$")) %>%
+  filter( !is.na(id)) %>%
   arrange(tweet_id)
 list_tweets_id <- tweets$tweet_id
 list_tweets_url <- tweets$url
@@ -365,7 +398,9 @@ for (i in 1:(length(list_tweets_id))){
     print(glue("Download RTs from {list_tweets_url[[i]]} {i}/{length(list_tweets_id)}"))
     users <- get_retweeters (list_tweets_id[[i]], n = 10000) 
     if (length(users) >= 1){
-      df_users <- to_dataframe(users) %>%
+      df_users <- users %>%
+        map(~ map(.x, ~ if (is.null(.x)) NA else .x)) %>%
+        map_dfr(as_tibble) %>%
         mutate(
           url_rt = list_tweets_url[[i]],
           username = paste0("@",{username}),
@@ -377,28 +412,104 @@ for (i in 1:(length(list_tweets_id))){
     }
     put_context_RTs(output, prefix, list_tweets_id[[i]])
     if (i < length(list_tweets_id)) {  # No esperar después de la última iteración
-      Sys.sleep(3)
       print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
-      Sys.sleep(sleep_time-3)
+      Sys.sleep(sleep_time)
     }
   }
 }
-
+# Control de duración
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+print(glue("Duración total: {round(elapsed, 2)} minutos"))
 ```
 
-#### Get replies
 
-```{r Get-Tweets-Cites, message=TRUE, warning=TRUE}
+#### Get replies 
+
+Usa la función tweet_replies(). Por este método se obtendrán como máximo 300 respuestas de un mensaje
+
+```{r Get-replies, message=TRUE, warning=TRUE}
 
 # Parámetros
 data_path = "../data"
 dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
 prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
-min_replies <- n                # Mínimo número de comentarios para descargar
-last <- 4                       # Número de días a partir de la fecha del tweet
-frecuency <- "n intervalo"      # Intervalo <- hour | day | week | month | year
-sleep_time <- 15                # Tiempo entre peticiones en segundos
+min_replies <- 1                # Mínimo número de comentarios para descargar
+sleep_time <- 5                 # Tiempo entre peticiones en segundos
 
+
+start_time <- Sys.time()
+print(glue("Start at {start_time}"))
+
+# Entorno ficheros
+file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
+output <- file.path(data_path,dataset)
+output_file <- file.path(output,paste0(prefix,"_replies.csv"))
+output_raw_file <- file.path(output,paste0(prefix,"_replies_raw.csv"))
+
+# Seleccionar tweets para descargar sus comentarios
+tweets <- read_csv(file_in, show_col_types = FALSE) %>%
+  filter (reply_count >= min_replies) %>%
+  mutate(tweet_id = str_extract(url, "\\d+$")) %>%
+  arrange(tweet_id)
+list_tweets_date <- tweets$date
+list_tweets_id <- tweets$tweet_id
+list_tweets_url <- tweets$url
+
+# Contexto
+flag_append <- FALSE
+flag_head <- TRUE
+last_tweet_id <- get_context_replies(output,prefix)
+if (!is.null (last_tweet_id)){
+  flag_append <- TRUE
+  flag_head <- FALSE
+}else{last_tweet_id <- 0}
+
+# Descarga
+for (i in 1:(length(list_tweets_id))){
+  if (list_tweets_id[[i]] > last_tweet_id){
+    print(glue("Download replies from {list_tweets_url[[i]]} {i}/{length(list_tweets_id)}"))
+    id_actual <- list_tweets_id[[i]]
+    tweets <- tweet_replies(id_actual, n = 10000)
+    if (length(tweets) >= 1){
+      df_tweets <- to_dataframe(tweets) %>%
+      mutate(url_replied = list_tweets_url[[i]]) %>%
+      select(id,date,username,text,user_displayname,user_id,reply_count,retweet_count,like_count,quote_count,views_count,lang,url,user_followers,user_verified, url_replied)
+      df_tweets <- clean_text(df_tweets)
+      # Escribir los datos en crudo
+      write_csv (df_tweets, output_raw_file, append = flag_append, col_names = flag_head)
+      # Escribir los datos limpios
+      write_csv (df_tweets, output_file, append = flag_append, col_names = flag_head)
+      put_context_replies(output, prefix, list_tweets_id[[i]])
+      flag_append <- TRUE
+      flag_head <- FALSE
+    }
+    print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
+    Sys.sleep(sleep_time)
+  }
+}
+# Control de duración
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+print(glue("Duración total: {round(elapsed, 2)} minutos"))
+```
+
+#### Get replies avanzadas
+
+Usa la función search_tweets() utilizando frecuencia de descarga. Se recomienda cuando se tienen que descargar mensajes que tienen más de 300 respuestas. 
+Adicionalmente, descarga los comentarios de los comentarios y obtiene hilos de conversaciones.
+
+```{r Get-replies_2, message=TRUE, warning=TRUE}
+
+# Parámetros
+data_path = "../data"
+dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
+prefix <- "xxxxxxxx"            # Prefijo del fichero para los datos
+min_replies <- 1                # Mínimo número de comentarios para descargar
+last <- 4                       # Número de días a partir de la fecha del tweet
+frecuency <- "n intervalo"      # Intervalo <- min | hour | day | week | month | year
+sleep_time <- 5                 # Tiempo entre peticiones en segundos
+
+start_time <- Sys.time()
+print(glue("Start at {start_time}"))
 # Entorno ficheros
 file_in <- file.path(data_path,dataset,paste0(prefix,".csv"))
 output <- file.path(data_path,dataset)
@@ -436,14 +547,14 @@ for (i in 1:(length(list_tweets_id))){
     if (length(date_sequence) > 1){
       for (i_date in 1:(length(date_sequence) - 1))  {
         # Fecha para comprobar rango 
-        min_date <- as.POSIXct(date_sequence[[i_date]], tz = "UTC")
-        max_date <- as.POSIXct(date_sequence[[i_date+1]], tz = "UTC")
+        min_date <- date_sequence[[i_date]]
+        max_date <- date_sequence[[i_date+1]]
         # Fecha para la query
-        ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
-        end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]),"_UTC")
+        ini_date <- format(date_sequence[[i_date]],   "%Y-%m-%d_%H:%M:%S_UTC", tz = "UTC")
+        end_date <- format(date_sequence[[i_date+1]], "%Y-%m-%d_%H:%M:%S_UTC", tz = "UTC")
         query <- glue("conversation_id:{id_actual} filter:replies since:{ini_date} until:{end_date}")
         print(glue("--> Descargando {query} ......"))
-        tweets <- search_tweets(query, n = 900)
+        tweets <- search_tweets(query, n = 900, product = "Top")
         if (length(tweets) >= 1){
           df_tweets <- to_dataframe(tweets) %>%
           mutate(url_replied = list_tweets_url[[i]]) %>%
@@ -458,14 +569,15 @@ for (i in 1:(length(list_tweets_id))){
           flag_append <- TRUE
           flag_head <- FALSE
         }
-        if (i < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
-          Sys.sleep(3)
+        if (i_date < (length(date_sequence) - 1)) {  # No esperar después de la última iteración
           print(glue("Esperando {sleep_time} segundos antes de la próxima iteración...\n"))
-          Sys.sleep(sleep_time-3)
+          Sys.sleep(sleep_time)
         }
       }
     }
   }
 }
-
+# Control de duración
+elapsed <- difftime(Sys.time(), start_time, units = "mins")
+print(glue("Duración total: {round(elapsed, 2)} minutos"))
 ```
