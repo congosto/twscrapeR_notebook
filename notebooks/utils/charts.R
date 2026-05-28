@@ -700,11 +700,12 @@ draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overl
       ),
       color = COLOR_TEXTO,
       max.overlaps = max_overlaps,
-      force = 1,
+      force_pull = 10,
+      direction = "x",
       size = 3.5,
       segment.size = 0.5,
       segment.linetype = 2,
-      min.segment.length = 0, 
+      min.segment.length = 1, 
       arrow = arrow(type = 'open', length = unit(.2, 'cm')),
       show.legend = FALSE
     ) +
@@ -713,7 +714,7 @@ draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overl
       data = comments_RTs_df,
       aes(
         x = max_RTs * 0.25, # 12% desde el inicio 
-        y = max_comments * 1.1 ,
+        y = max_comments * 1.3 ,
         label = glue("{round(sum(possible_controversy)*100 / nrow(comments_RTs_df),1)}% controversy")
       ),
       color = COLOR_TEXTO,
@@ -722,18 +723,18 @@ draw_comments_vs_RTs <- function(df, ini_date, end_date, min_comments, max_overl
     geom_polygon(
       aes( 
         # Coordenadas x,y del triángulo
-        x = c(0, 0, max_comments * 1.1),  # Coordenadas x del triángulo
-        y = c(0, max_comments * 1.2, max_comments * 1.2),
+        x = c(0, 0, max_comments * 1.4),  # Coordenadas x del triángulo
+        y = c(0, max_comments * 1.4, max_comments * 1.4),
       ), 
       fill = color_comments,
       alpha = 0.4  # Rellenar con color
     ) +
     scale_x_continuous(
-      limits= c(0,size_x*1.1),
+      limits= c(0,size_x*1.3),
       expand= c(0,0)
       ) +
     scale_y_continuous(
-      limits= c(0,max_comments*1.2),
+      limits= c(0,max_comments*1.4),
       expand= c(0,0)) +
     scale_size(range = c(1, 2)) +
     # Ponemos los títulos
@@ -1179,8 +1180,7 @@ draw_media_acumulate <- function(df, ini_date, end_date, media, RTs) {
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 draw_topics_acumulate <- function(df, topics,  ini_date, end_date, RTs, events) {
-
-  df <- df %>% 
+  df <- df %>%
     filter(date >= ini_date & date <= end_date)
   first_time <- TRUE
   df <- df %>%
@@ -1200,7 +1200,7 @@ draw_topics_acumulate <- function(df, topics,  ini_date, end_date, RTs, events) 
       topics_df <- rbind (topics_df,aux_df)
     }
   }
-  # Verificar si cada site tiene la date máxima, y si no, añadirla
+  # Verificar si cada topic tiene la date máxima, y si no, añadirla
   df_full <- topics_df %>%
     group_by(topics) %>%
     mutate(necesita_max = !any(date_slot == end_date)) %>%
