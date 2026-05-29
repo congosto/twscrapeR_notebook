@@ -87,33 +87,28 @@ require("knitr")
 opts_knit$set(root.dir = "./")
 ```
 
-#### Comprobar versión de twscrape
-
-¡¡¡Atención!!!
-
-Ejecutar este chunk antes del Import libraries
+#### Cargar librerías y comprobar versión de twscrape
 
 
 ```{r parche twscrape}
-# 1. Especificar entorno ANTES de cargar la librería
-use_miniconda <- FALSE
-# Opción A: miniconda
-# Se asume que se ha instalado un entorno llamado "reticulate" en miniconda
+# 1 Configurar entorno miniconda (si existe) 
+use_miniconda <- FALSE # Por defecto no existe
 if (use_miniconda) {
   Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
   Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
-} else {
-  # Opción B: Python directo
-  setup_twscraper()
 }
-# 2. Instalar y cargar reticulate
+# 2 Instalar reticulate 
 if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
 library(reticulate)
+if (use_miniconda) { reticulate::use_condaenv("reticulate", required = TRUE) }
 
-# 3. Especificar entorno conda (solo una vez, después de library)
-if (use_miniconda) {
-  reticulate::use_condaenv("reticulate", required = TRUE)
-}
+# 3 Instalar twscrapeR (que necesita reticulate)
+if (!"devtools" %in% installed.packages()) { install.packages("devtools") }
+if (!"twscrapeR" %in% installed.packages()) { devtools::install_github("agusnieto77/twscrapeR") }
+library(devtools)
+library(twscrapeR)
+
+setup_twscraper()  # configuración inicial
 
 # 4. Comprobar versión de twscrape e instalar si es necesaria
 tryCatch({
@@ -137,24 +132,17 @@ tryCatch({
   reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
 })
 
-
-```
-
-#### Import libraries
-
-```{r library}
-if(!"tidyverse" %in% installed.packages()) {install.packages("tidyverse")}
-if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
+if(!"dplyr" %in% installed.packages()) {install.packages("dplyr")}
+if(!"purrr" %in% installed.packages()) {install.packages("purrr")}
+if(!"stringr" %in% installed.packages()) {install.packages("stringr")}
+if(!"readr" %in% installed.packages()) {install.packages("readr")}
 if(!"lubridate" %in% installed.packages()) {install.packages("lubridate")}
-if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
-
 if(!"glue" %in% installed.packages()) {install.packages("glue")}
 library("dplyr")
 library("purrr")
 library("stringr")
 library("readr")
 library("lubridate")
-library("twscrapeR")
 library("glue")
 
 ```
