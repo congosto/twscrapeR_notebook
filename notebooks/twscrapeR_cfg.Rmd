@@ -1,35 +1,45 @@
 ---
-title: "Configuracion de POOL de usuarios para twscrapeR (2 cuentas)"
+title: "Configuracion de POOL de usuarios para twscrapeR (5 cuentas)"
 output: html_notebook
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ## twscrapeR.Rmd
 
-Este cuaderno configura un **pool de 2 cuentas** para twscrape. Con 2 cuentas, cuando una alcance el rate limit (900 req/15min), automáticamente usara la otra.
+Este cuaderno configura un **pool de 5 cuentas** para twscrape. Con 5
+cuentas, cuando una alcance el rate limit (900 req/15min),
+automáticamente usara la otra.
 
-**Velocidad estimada**: \~1800 tweets / 15 min (el doble que con 1 cuenta)
+**Velocidad estimada**: \~4.500 tweets / 15 min
 
 ### Como funciona el pool
 
 1.  Las cuentas se guardan en un archivo `accounts.db` (SQLite)
 2.  twscrape automaticamente rota entre cuentas cuando una se bloquea
-3.  Solo necesitas ejecutar este cuaderno **una vez** (o cuando cambien las cookies)
+3.  Solo necesitas ejecutar este cuaderno **una vez** (o cuando cambien
+    las cookies)
 
 ### Como obtener las cookies
 
 Para cada cuenta:
 
-1.  Abre <https://x.com> en tu navegador (con sesión iniciada en esa cuenta)
+1.  Abre <https://x.com> en tu navegador (con sesión iniciada en esa
+    cuenta)
 2.  Presiona F12 -\> "Application" -\> "Cookies" -\> "<https://x.com>"
 3.  Copia los valores de `auth_token` y `ct0`
 4.  Formato: `"auth_token=VALOR1; ct0=VALOR2"`
 
 **IMPORTANTE**:
 
-1.  **Las cookies caducan**: Si ves errores de autenticación, extrae nuevas cookies de x.com
+1.  **Las cookies caducan**: Si ves errores de autenticación, extrae
+    nuevas cookies de x.com
 2.  **No compartas este archivo**: Contiene credenciales sensibles
-3.  **Usa cuentas diferentes**: No uses la misma cuenta muchas veces seguidas
-4.  **IPs diferentes** (recomendado): Si usas proxies, asigna IPs diferentes a cada cuenta
+3.  **Usa cuentas diferentes**: No uses la misma cuenta muchas veces
+    seguidas
+4.  **IPs diferentes** (recomendado): Si usas proxies, asigna IPs
+    diferentes a cada cuenta
 
 ------------------------------------------------------------------------
 
@@ -47,14 +57,56 @@ require("knitr")
 opts_knit$set(root.dir = "./")
 ```
 
-#### Import libraries
 
-```{r library}
-if(!"devtools" %in% installed.packages()) {install.packages("devtools")}
-if(!"twscrapeR" %in% installed.packages()) {devtools::install_github("agusnieto77/twscrapeR")}
-library("devtools")
-library("twscrapeR")
+#### Importar librerias y comprobar versión de twscrape
+
+```{r librerías y version twscraper}
+
+# 1 Configurar entorno miniconda (si existe) 
+use_miniconda <- FALSE # Por defecto no existe
+if (use_miniconda) {
+  Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
+}
+# 2 Instalar reticulate 
+if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
+library(reticulate)
+if (use_miniconda) { reticulate::use_condaenv("reticulate", required = TRUE) }
+
+# 3 Instalar twscrapeR (que necesita reticulate)
+if (!"devtools" %in% installed.packages()) { install.packages("devtools") }
+if (!"twscrapeR" %in% installed.packages()) { devtools::install_github("agusnieto77/twscrapeR") }
+library(devtools)
+library(twscrapeR)
+
+setup_twscraper()  # configuración inicial
+
+
+# 4. Comprobar versión de twscrape e instalar si es necesaria
+tryCatch({
+  twscrape <- reticulate::import("twscrape")
+  version_actual <- twscrape$`__version__`
+  
+  version_a_numeric <- function(v) {
+    parts <- as.integer(strsplit(v, "\\.")[[1]])
+    parts[1] * 10000 + parts[2] * 100 + ifelse(length(parts) >= 3, parts[3], 0)
+  }
+  
+  if (version_a_numeric(version_actual) < version_a_numeric("0.18.0")) {
+    message("twscrape ", version_actual, " es inferior a 0.18.0. Actualizando...")
+    reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+  } else {
+    message("twscrape ", version_actual, " ya cumple el requisito (>=0.18.0).")
+  }
+  
+}, error = function(e) {
+  message("twscrape no encontrado. Instalando...")
+  reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+})
+
+
 ```
+
 
 #### Ver cuentas actuales (opcional)
 
@@ -62,30 +114,113 @@ Ejecuta este chunk para ver que cuentas tienes configuradas actualmente:
 
 ```{r ver-cuentas}
 print("=== CUENTAS ACTUALES EN EL POOL ===")
-print(list_accounts())
+if (length(list_accounts()) > 0) {
+  print(list_accounts())
+} else {
+  print("No existe ninguna cuenta")
+}
 ```
 
 #### Limpiar todas las cuentas (opcional)
 
-**ATENCION**: Solo ejecuta este chunk si quieres BORRAR todas las cuentas y empezar de cero:
+**ATENCION**: Solo ejecuta este chunk si quieres BORRAR todas las
+cuentas y empezar de cero:
 
 ```{r limpiar-cuentas, eval=FALSE}
 # CUIDADO: Esto borra TODAS las cuentas del pool
-for (user in list_accounts()) {
-  delete_account(user$username)
+cuentas <- list_accounts()
+if (length(cuentas) == 0) {
+  print("No hay cuentas que eliminar")
+} else {
+  for (user in cuentas) { delete_account(user$username) }
+  print("Todas las cuentas han sido eliminadas")
 }
-print("Todas las cuentas han sido eliminadas")
 
 ```
 
-#### Configurar Pool de 2 Cuentas
+#### Configurar Pool de 5 Cuentas con .Renviron (recomendado)
 
-Rellena los datos de tus dos cuentas y ejecuta este chunk:
+Se muestra cómo crear un pool de 5 cuentas, pero cada uno debe ajustar
+el pool a las cuentas de que disponga.
 
-```{r configurar-pool-2-cuentas, message=TRUE}
-# =============================================================================
+Se aconseja que **no se incluya ninguna cuenta personal** porque hay
+riesgo de que la bloqueen.
+
+Previamente, en Windows, en el directorio C:\Users\User\Documents,
+editar el fichero .Renviron y rellenar los datos de las cuentas
+
+```         
+TWS1_USERNAME='xxxxxxxxx'
+TWS1_PASSWORD='xxxxxxxxx'
+TWS1_EMAIL='xxxxxxxx\@xxxxxx.com'
+TWS1_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS1_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
+
+TWS2_USERNAME='xxxxxxxxx'
+TWS2_PASSWORD='xxxxxxxxx'
+TWS2_EMAIL='xxxxxxxx\@xxxxx.com'
+TWS2_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS2_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
+
+TWS3_USERNAME='xxxxxxxxx'
+TWS3_PASSWORD='xxxxxxxxx'
+TWS3_EMAIL='xxxxxxxx\@xxxxx.com'
+TWS3_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS3_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
+
+TWS4_USERNAME='xxxxxxxxx'
+TWS4_PASSWORD='xxxxxxxxx'
+TWS4_EMAIL='xxxxxxxx\@xxxxx.com'
+TWS4_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS4_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
+
+TWS5_USERNAME='xxxxxxxxx'
+TWS5_PASSWORD='xxxxxxxxx'
+TWS5_EMAIL='xxxxxxxx\@xxxxx.com'
+TWS5_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS5_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
+```
+
+```{r configurar-pool-5-cuentas_A, message=TRUE}
+
 # CUENTA 1
-# =============================================================================
+add_account_from_env(prefix = "TWS1_")
+
+# CUENTA 2
+add_account_from_env(prefix = "TWS2_")
+
+# CUENTA 3
+add_account_from_env(prefix = "TWS3_")
+
+# CUENTA 4
+
+add_account_from_env(prefix = "TWS4_")
+
+# CUENTA 5
+add_account_from_env(prefix = "TWS5_")
+
+
+# VERIFICACION
+
+print("=== POOL DE CUENTAS CONFIGURADO ===")
+cuentas <- list_accounts()
+print(paste("Total de cuentas en el pool:", length(cuentas)))
+print(cuentas)
+```
+
+#### Alternativa para Configurar Pool de 5 Cuentas sin .Renviron
+
+Se muestra cómo crear un pool de 5 cuentas, pero cada uno debe ajustar
+el pool a las cuentas de que disponga.
+
+Se aconseja que **no se incluya ninguna cuenta personal** porque hay
+riesgo de que la bloqueen.
+
+Rellena los datos de tus cuentas y ejecuta este chunk:
+
+```{r configurar-pool-5-cuentas_B, message=TRUE}
+
+# CUENTA 1
 add_account(
   username = "USUARIO_1",
   password = "PASSWORD_1",
@@ -93,11 +228,7 @@ add_account(
   email_password = "EMAIL_PASSWORD_USUARIO_1",
   cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_1; ct0=TU_CT0_USUARIO_1"
 )
-
-
-# =============================================================================
 # CUENTA 2
-# =============================================================================
 add_account(
   username = "USUARIO_2",
   password = "PASSWORD_2",
@@ -105,43 +236,34 @@ add_account(
   email_password = "EMAIL_PASSWORD_USUARIO_2",
   cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_2; ct0=TU_CT0_USUARIO_2"
 )
-
-# =============================================================================
+# CUENTA 3
+add_account(
+  username = "USUARIO_3",
+  password = "PASSWORD_3",
+  email = "EMAIL_USUARIO_3@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_USUARIO_3",
+  cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_3; ct0=TU_CT0_USUARIO_3"
+)
+# CUENTA 4
+add_account(
+  username = "USUARIO_4",
+  password = "PASSWORD_4",
+  email = "EMAIL_USUARIO_4@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_USUARIO_4",
+  cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_4; ct0=TU_CT0_USUARIO_4"
+)
+# CUENTA 5
+add_account(
+  username = "USUARIO_5",
+  password = "PASSWORD_5",
+  email = "EMAIL_USUARIO_5@ejemplo.com",
+  email_password = "EMAIL_PASSWORD_USUARIO_5",
+  cookies = "auth_token=TU_AUTH_TOKEN_USUARIO_5; ct0=TU_CT0_USUARIO_5"
+)
 # VERIFICACION
-# =============================================================================
+
 print("=== POOL DE CUENTAS CONFIGURADO ===")
 cuentas <- list_accounts()
 print(paste("Total de cuentas en el pool:", length(cuentas)))
 print(cuentas)
 ```
-
-#### Anadir una cuenta adicional (opcional)
-
-Si mas adelante quieres añadir una tercera cuenta sin borrar las existentes:
-
-```{r anadir-cuenta-extra, eval=FALSE}
-add_account(
-  username = "USUARIO_EXTRA",
-  password = "PASSWORD_EXTRA",
-  email = "email_extra@ejemplo.com",
-  email_password = "EMAIL_PASSWORD_EXTRA",
-  cookies = "auth_token=TU_AUTH_TOKEN_EXTRA; ct0=TU_CT0_EXTRA"
-)
-
-print("=== CUENTA ANADIDA ===")
-print(list_accounts())
-```
-
-#### Eliminar una cuenta especifica (opcional)
-
-Si necesitas eliminar una cuenta especifica del pool:
-
-```{r eliminar-cuenta-especifica, eval=FALSE}
-# Cambia "nombre_usuario" por el username que quieres eliminar
-delete_account("nombre_usuario")
-
-print("=== CUENTA ELIMINADA ===")
-print(list_accounts())
-```
-
-------------------------------------------------------------------------
