@@ -17,7 +17,7 @@ automáticamente usara la otra.
 ### Como funciona el pool
 
 1.  Las cuentas se guardan en un archivo `accounts.db` (SQLite)
-2.  twscrape automaticamente rota entre cuentas cuando una se bloquea
+2.  twscrape automáticamente rota entre cuentas cuando una se bloquea
 3.  Solo necesitas ejecutar este cuaderno **una vez** (o cuando cambien
     las cookies)
 
@@ -60,13 +60,17 @@ opts_knit$set(root.dir = "./")
 
 #### Importar librerias y comprobar versión de twscrape
 
-```{r librerías y version twscraper}
+```{r librerías y version twscraper, message=FALSE, warning=FALSE}
 
 # 1 Configurar entorno miniconda (si existe) 
 use_miniconda <- FALSE # Por defecto no existe
 if (use_miniconda) {
+  # Atención!!! Se asume que hay un entorno creado llamado reticulate
   Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
   Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
+}else{
+  # Atención!!! Poner el path dónde esté instalado Python
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/AppData/Local/Python/bin/python.exe")
 }
 # 2 Instalar reticulate 
 if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
@@ -79,10 +83,10 @@ if (!"twscrapeR" %in% installed.packages()) { devtools::install_github("agusniet
 library(devtools)
 library(twscrapeR)
 
-setup_twscraper()  # configuración inicial
-
 
 # 4. Comprobar versión de twscrape e instalar si es necesaria
+python_exe <- reticulate::py_config()$python
+
 tryCatch({
   twscrape <- reticulate::import("twscrape")
   version_actual <- twscrape$`__version__`
@@ -94,17 +98,16 @@ tryCatch({
   
   if (version_a_numeric(version_actual) < version_a_numeric("0.18.0")) {
     message("twscrape ", version_actual, " es inferior a 0.18.0. Actualizando...")
-    reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+    system2(python_exe, args = c("-m", "pip", "install", "twscrape>=0.18.0"))
   } else {
     message("twscrape ", version_actual, " ya cumple el requisito (>=0.18.0).")
   }
   
 }, error = function(e) {
   message("twscrape no encontrado. Instalando...")
-  reticulate::py_install("twscrape>=0.18.0", pip = TRUE)
+  system2(python_exe, args = c("-m", "pip", "install", "numpy", "twscrape>=0.18.0"))
 })
-
-
+setup_twscraper()
 ```
 
 
