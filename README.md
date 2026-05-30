@@ -1,6 +1,6 @@
 # twscrapeR_notebook
 
-Notebooks para la descarga y visualización de tweets con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
+Notebooks para la descarga y visualización con la librería [**twscraperR**](https://github.com/agusnieto77/twscrapeR)
 
 ## Instalación
 
@@ -63,6 +63,8 @@ Permite descargar tweets de una consulta, de un usuario o los retweets
 1.  **Get Tweets Historical Search**: descarga una consulta en un periodo definido con una frecuencia establecida
 2.  **Get Tweets Historical Timeline**: descarga el timeline de una lista de usuarios en un periodo definido con una frecuencia establecida. No se obtienen los RTs porque equivale a una consulta del tipo from:usuario
 3.  **Get Retweets**: descarga los usuarios que han hecho RT a los tweets de un dataset. El formato de los datos es diferente a las opciones 1 y 2
+4.  **Get replies**: descarga los comentarios de los tweets de un dataset. Usa la función tweet_replies(). Por este método se obtendrán como máximo 300 respuestas de un mensaje
+5.  **Get replies avanzadas**: obtiene los comentarios de los tweets de un dataset. Usa la función search_tweets() utilizando frecuencia de descarga. Se recomienda cuando se tienen que descargar mensajes que tienen más de 300 respuestas. Adicionalmente, descarga los comentarios de los comentarios y obtiene hilos de conversaciones.
 
 **Para todas las descargas**:
 
