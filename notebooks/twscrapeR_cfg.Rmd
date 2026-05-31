@@ -63,14 +63,14 @@ opts_knit$set(root.dir = "./")
 ```{r librerías y version twscraper, message=FALSE, warning=FALSE}
 
 # 1 Configurar entorno miniconda (si existe) 
-use_miniconda <- FALSE # Por defecto no existe
+use_miniconda <- TRUE # Por defecto no existe
 if (use_miniconda) {
   # Atención!!! Se asume que hay un entorno creado llamado reticulate
   Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
   Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
 }else{
   # Atención!!! Poner el path dónde esté instalado Python
-  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/AppData/Local/Python/bin/python.exe")
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/congosto/AppData/Local/Python/bin/python.exe")
 }
 # 2 Instalar reticulate 
 if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
@@ -155,32 +155,32 @@ editar el fichero .Renviron y rellenar los datos de las cuentas
 ```         
 TWS1_USERNAME='xxxxxxxxx'
 TWS1_PASSWORD='xxxxxxxxx'
-TWS1_EMAIL='xxxxxxxx\@xxxxxx.com'
-TWS1_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS1_EMAIL='xxxxxxxx@xxxxxx.com'
+TWS1_EMAIL_PASSWORD='xxxxxxxxxxxx' # Opción A: cookie completa
 TWS1_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
 
 TWS2_USERNAME='xxxxxxxxx'
 TWS2_PASSWORD='xxxxxxxxx'
-TWS2_EMAIL='xxxxxxxx\@xxxxx.com'
-TWS2_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS2_EMAIL='xxxxxxxx@xxxxx.com'
+TWS2_EMAIL_PASSWORD='xxxxxxxxxxxx' # Opción A: cookie completa
 TWS2_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
 
 TWS3_USERNAME='xxxxxxxxx'
 TWS3_PASSWORD='xxxxxxxxx'
-TWS3_EMAIL='xxxxxxxx\@xxxxx.com'
-TWS3_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS3_EMAIL='xxxxxxxx@xxxxx.com'
+TWS3_EMAIL_PASSWORD='xxxxxxxxxxxx' # Opción A: cookie completa
 TWS3_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
 
 TWS4_USERNAME='xxxxxxxxx'
 TWS4_PASSWORD='xxxxxxxxx'
-TWS4_EMAIL='xxxxxxxx\@xxxxx.com'
-TWS4_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS4_EMAIL='xxxxxxxx@xxxxx.com'
+TWS4_EMAIL_PASSWORD='xxxxxxxxxxxx' # Opción A: cookie completa
 TWS4_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
 
 TWS5_USERNAME='xxxxxxxxx'
 TWS5_PASSWORD='xxxxxxxxx'
-TWS5_EMAIL='xxxxxxxx\@xxxxx.com'
-TWS5_EMAIL_PASSWORD='xxxxxxxxxxxx' \# Opción A: cookie completa
+TWS5_EMAIL='xxxxxxxx@xxxxx.com'
+TWS5_EMAIL_PASSWORD='xxxxxxxxxxxx' # Opción A: cookie completa
 TWS5_COOKIES="auth_token=xxxx; ct0=xxxxxxx"
 ```
 
