@@ -63,14 +63,14 @@ opts_knit$set(root.dir = "./")
 ```{r librerías y version twscraper, message=FALSE, warning=FALSE}
 
 # 1 Configurar entorno miniconda (si existe) 
-use_miniconda <- TRUE # Por defecto no existe
+use_miniconda <- FALSE # Por defecto no existe
 if (use_miniconda) {
   # Atención!!! Se asume que hay un entorno creado llamado reticulate
   Sys.setenv(RETICULATE_MINICONDA_PATH = "C:/Users/User/miniconda3")
   Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
 }else{
   # Atención!!! Poner el path dónde esté instalado Python
-  Sys.setenv(RETICULATE_PYTHON = "C:/Users/congosto/AppData/Local/Python/bin/python.exe")
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/AppData/Local/Python/bin/python.exe")
 }
 # 2 Instalar reticulate 
 if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
