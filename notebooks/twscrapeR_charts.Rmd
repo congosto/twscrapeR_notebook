@@ -523,7 +523,7 @@ if (params$show_topics & params$zoom){
 
 #### Words frequency by community
 
-```{r words_frequency_by_community, fig.height=612, fig.width=6}
+```{r words_frequency_by_community, fig.height=12, fig.width=6}
 if (ARS) {
    p <- words_frequency_by_community(
      tweets,
