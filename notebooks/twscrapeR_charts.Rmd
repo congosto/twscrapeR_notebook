@@ -188,7 +188,8 @@ if (params$show_events){
     )
   ) %>%
     mutate(
-      event = gsub(" ","\n",event),
+      #event = gsub(" ","\n",event),
+      event = stringr::str_replace_all(event, "\\\\n", "\n"),
       date = parse_date_time(date, orders = "Ymd HMS", tz = "Europe/Berlin")
     )
 }else {events= NULL}
@@ -368,7 +369,7 @@ ggsave(file.path(image_path,glue("{params$prefix}_tweets_vs_RTs.png")))
 p<- draw_comments_vs_RTs (
   tweets, 
   min_date, max_date,
-  params$min_comments, 20) 
+  params$min_comments, 10) 
 print (p)
 # Salvamos la gráfica en un archivo
 ggsave(file.path(image_path,glue("{params$prefix}_comments_vs_RTs.png")))
@@ -412,26 +413,26 @@ ggsave(file.path(image_path,glue("{params$prefix}_word_cloud_RTs.png")))
 ```{r medios, fig.height=6, fig.width=10}
 
 media <- c(
-  "@El_Plural",
-  "@eldiarioes",
-  "@el_pais",
-  "@La_SER",
-  "@TheObjective_es",
-  "@eldebate_com",
-  "@publico_es",
-  "@elmundoes",
-  "@europapress",
-  "@ElHuffPost",
-  "@elespanolcom",
-  "@laSextaTV",
-  "@abc_es",
-  "@rtvenoticias",
-  "@OndaCero_es",
-  "@HoyPorHoy",
-  "@okdiario",
-  "@voz_populi",
-  "@libertaddigital",
-  "@El_Plural"
+  "El_Plural",
+  "eldiarioes",
+  "el_pais",
+  "La_SER",
+  "TheObjective_es",
+  "eldebate_com",
+  "publico_es",
+  "elmundoes",
+  "europapress",
+  "ElHuffPost",
+  "elespanolcom",
+  "laSextaTV",
+  "abc_es",
+  "rtvenoticias",
+  "OndaCero_es",
+  "HoyPorHoy",
+  "okdiario",
+  "voz_populi",
+  "libertaddigital",
+  "El_Plural"
   )
 
 p <- draw_media_acumulate(
@@ -522,7 +523,7 @@ if (params$show_topics & params$zoom){
 
 #### Words frequency by community
 
-```{r words_frequency_by_community}
+```{r words_frequency_by_community, fig.height=612, fig.width=6}
 if (ARS) {
    p <- words_frequency_by_community(
      tweets,
