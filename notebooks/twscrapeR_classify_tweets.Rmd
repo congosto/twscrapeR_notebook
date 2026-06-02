@@ -112,6 +112,12 @@ datos_gephi <- datos_gephi %>%
   #filtramos nodos de la componente gigante
   filter(componentnumber == 0 )
 }
+
+# Obtener las comunidades más relevantes
+top_communities <- names(sort(table(datos_gephi$modularity_class), decreasing = TRUE)[1:params$max_communities])
+
+# Filtrar el dataframe
+datos_gephi <- datos_gephi[datos_gephi$modularity_class %in% top_communities, ]
 datos_gephi_cg <- datos_gephi %>%
   #seleccionamos datos para la clasificación
   select(Label,modularity_class) 
@@ -149,55 +155,54 @@ for (modularity in modularities) {
   writeLines(texto_vector, name_file_txt)
 }
 # Por bloques
+if (params$block){                             
+  # Unir los tweets con la clasificación de bloques
+  tweets_blocks <- tweets_classifield %>%
+    filter(!is.na(community))  %>%
+    left_join(blocks, by = "community")
 
-# Unir los tweets con la clasificación de bloques
-tweets_blocks <- tweets_classifield %>%
-  filter(!is.na(community))  %>%
-  left_join(blocks, by = "community")
-
-# Crear los ficheros por bloque de textos y de words
-custom_stop_words <- bind_rows(
-  stop_words,
-  data_frame(word = tm::stopwords("spanish"),lexicon = "custom"),
-  data_frame(word = tm::stopwords("catalan"),lexicon = "custom")
-)
-unique_blocks <- unique(tweets_blocks$block)
-for (unique_block in unique_blocks) {
-  textos <- tweets_blocks %>%
-  filter(block == unique_block) 
-  # Limpiar y tokenizar texto
-  word_frequency <- textos[, -1] %>% # la primera columna se queda pegada
-    mutate(text_plain = gsub('http\\S+\\s*',"",text)) %>% # Quitamos las URLs
-    mutate(text_plain = gsub("RT @\\w+:","",text_plain)) %>% # Quitamos los RTs
-    mutate(text_plain = gsub("&amp;","&",text_plain)) %>% # Rectificamos el &
-    mutate(text_plain = gsub("@\\w+","",text_plain)) %>% # Quitamos las menciones
-    select(text_plain) %>%
-    unnest_tokens(word, text_plain) %>% # Convertimos las frases en un conjunto de palabras
-    anti_join(custom_stop_words) %>% # Eliminamos las stop words
-    group_by(word) %>%     # Agrupamos por palabras   
-    summarise(
-      freq = n(),
-      .groups = "drop"
-    ) %>%  # Calculamos la frecuencia de cada palabra
-    ungroup() %>%
-    filter (!is.na(word)) %>% # Quitamos textos vacíos
-    arrange(desc(freq))  %>% # Ordenamos de mayor a menor frecuencia de aparición
-    select(freq,word) %>%
-    head (1000) 
-  name_file_words <- file.path(data_path, glue("{params$prefix}_blocks_{unique_block}_words.txt"))
-  # Escribir el archivo
-  write.table(word_frequency, file = name_file_words, sep = " ", row.names = FALSE, quote = FALSE, fileEncoding = "UTF-8")
+  # Crear los ficheros por bloque de textos y de words
+  custom_stop_words <- bind_rows(
+    stop_words,
+    data_frame(word = tm::stopwords("spanish"),lexicon = "custom"),
+    data_frame(word = tm::stopwords("catalan"),lexicon = "custom")
+  )
+  unique_blocks <- unique(tweets_blocks$block)
+  for (unique_block in unique_blocks) {
+    textos <- tweets_blocks %>%
+    filter(block == unique_block) 
+    # Limpiar y tokenizar texto
+    word_frequency <- textos[, -1] %>% # la primera columna se queda pegada
+      mutate(text_plain = gsub('http\\S+\\s*',"",text)) %>% # Quitamos las URLs
+      mutate(text_plain = gsub("RT @\\w+:","",text_plain)) %>% # Quitamos los RTs
+      mutate(text_plain = gsub("&amp;","&",text_plain)) %>% # Rectificamos el &
+      mutate(text_plain = gsub("@\\w+","",text_plain)) %>% # Quitamos las menciones
+      select(text_plain) %>%
+      unnest_tokens(word, text_plain) %>% # Convertimos las frases en un conjunto de palabras
+      anti_join(custom_stop_words) %>% # Eliminamos las stop words
+      group_by(word) %>%     # Agrupamos por palabras   
+      summarise(
+        freq = n(),
+        .groups = "drop"
+      ) %>%  # Calculamos la frecuencia de cada palabra
+      ungroup() %>%
+      filter (!is.na(word)) %>% # Quitamos textos vacíos
+      arrange(desc(freq))  %>% # Ordenamos de mayor a menor frecuencia de aparición
+      select(freq,word) %>%
+      head (1000) 
+    name_file_words <- file.path(data_path, glue("{params$prefix}_blocks_{unique_block}_words.txt"))
+    # Escribir el archivo
+    write.table(word_frequency, file = name_file_words, sep = " ", row.names = FALSE, quote = FALSE, fileEncoding = "UTF-8")
+  }
+  for (unique_block in unique_blocks) {
+    textos <- tweets_blocks %>%
+      filter(block == unique_block) %>%
+      pull(text)
+    name_file_txt <- file.path(data_path, glue("{params$prefix}_blocks_{unique_block}.txt"))
+    # Escribir el archivo
+    write(textos, file = name_file_txt, ncolumns = 1, sep = "\n")
+  }
 }
-for (unique_block in unique_blocks) {
-  textos <- tweets_blocks %>%
-    filter(block == unique_block) %>%
-    pull(text)
-  name_file_txt <- file.path(data_path, glue("{params$prefix}_blocks_{unique_block}.txt"))
-  # Escribir el archivo
-  write(textos, file = name_file_txt, ncolumns = 1, sep = "\n")
-
-}
-
 
 ```
 
