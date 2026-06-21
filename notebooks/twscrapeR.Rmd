@@ -99,7 +99,7 @@ if (use_miniconda) {
   Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/miniconda3/envs/reticulate/python.exe")
 }else{
   # Atención!!! Poner el path dónde esté instalado Python
-  Sys.setenv(RETICULATE_PYTHON = "C:/Users/User/AppData/Local/Python/bin/python.exe")
+  Sys.setenv(RETICULATE_PYTHON = "C:/Users/user/AppData/Local/Python/bin/python.exe")
 }
 # 2 Instalar reticulate 
 if (!"reticulate" %in% installed.packages()) { install.packages("reticulate") }
@@ -125,16 +125,16 @@ tryCatch({
     parts[1] * 10000 + parts[2] * 100 + ifelse(length(parts) >= 3, parts[3], 0)
   }
   
-  if (version_a_numeric(version_actual) < version_a_numeric("0.18.0")) {
-    message("twscrape ", version_actual, " es inferior a 0.18.0. Actualizando...")
-    system2(python_exe, args = c("-m", "pip", "install", "twscrape>=0.18.0"))
+  if (version_a_numeric(version_actual) < version_a_numeric("0.19.0")) {
+    message("twscrape ", version_actual, " es inferior a 0.19.0. Actualizando...")
+    system2(python_exe, args = c("-m", "pip", "install", "twscrape>=0.19.0"))
   } else {
-    message("twscrape ", version_actual, " ya cumple el requisito (>=0.18.0).")
+    message("twscrape ", version_actual, " ya cumple el requisito (>=0.19.0).")
   }
   
 }, error = function(e) {
   message("twscrape no encontrado. Instalando...")
-  system2(python_exe, args = c("-m", "pip", "install", "numpy", "twscrape>=0.18.0"))
+  system2(python_exe, args = c("-m", "pip", "install", "numpy", "twscrape>=0.19.0"))
 })
 setup_twscraper()
 
@@ -204,8 +204,8 @@ if (length(date_sequence) > 1){
     min_date <- as.POSIXct(date_sequence[[i]], tz = "UTC")
     max_date <- as.POSIXct(date_sequence[[i+1]], tz = "UTC")
     # Fecha para la query
-    ini_date = paste0(gsub(" ", "_", date_sequence[[i]]),"_UTC")
-    end_date = paste0(gsub(" ", "_", date_sequence[[i+1]]),"_UTC")
+    ini_date = paste0(gsub(" ", "_", date_sequence[[i]]))
+    end_date = paste0(gsub(" ", "_", date_sequence[[i+1]]))
     # Query
     print(glue("Desde {ini_date} hasta {end_date}"))
     query_date <- glue("{query} since:{ini_date} until:{end_date}")
@@ -311,8 +311,8 @@ for (i_user in 1:(length(list_users))){
       min_date <- as.POSIXct(date_sequence[[i_date]], tz = "UTC")
       max_date <- as.POSIXct(date_sequence[[i_date+1]], tz = "UTC")
       # Fecha para la query
-      ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]),"_UTC")
-      end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]),"_UTC")
+      ini_date = paste0(gsub(" ", "_", date_sequence[[i_date]]))
+      end_date = paste0(gsub(" ", "_", date_sequence[[i_date+1]]))
       # Query
       print(glue("Desde {ini_date} hasta {end_date}"))
       query_date <- glue("from:{user} since:{ini_date} until:{end_date}")
@@ -492,7 +492,6 @@ Usa la función search_tweets() utilizando frecuencia de descarga. Se recomienda
 Adicionalmente, descarga los comentarios de los comentarios y obtiene hilos de conversaciones.
 
 ```{r Get-replies_2, message=TRUE, warning=TRUE}
-
 # Parámetros
 data_path = "../data"
 dataset <- "xxxxxxxx"           # Nombre del dataset (directorio)
